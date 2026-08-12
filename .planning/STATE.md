@@ -6,14 +6,14 @@ current_phase: 01
 current_phase_name: foundation-configuration-airport-registry-resolution
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-08-12T21:49:10.912Z"
+last_updated: "2026-08-12T22:35:10.476Z"
 last_activity: 2026-08-12
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 ## Current Position
 
 Phase: 01 (foundation-configuration-airport-registry-resolution) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-08-12 — Phase 01 execution started
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 45min | 3 tasks | 9 files |
+| Phase 01 P02 | 40min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 - [Phase 01]: Vitest chosen as test runner (native TS/ESM, resolves @/* alias, no Babel/ts-jest bridge)
 - [Phase 01]: Registry carries no byRegion member; region lookup derives downstream from byState + state-to-region table
 - [Phase 01]: Added postinstall: next typegen so a fresh clone's npx tsc --noEmit is clean without requiring dev/build first
+- [Phase 01-02]: Collapsed env.schema.ts + env.ts into a single src/config/env.ts by explicit developer decision, matching a sibling-project convention
+- [Phase 01-02]: No automated unit test for env.ts (server-only unconditionally throws under plain Vitest); SETUP-01 verified manually via live dev-server runs
+- [Phase 01-02]: Disabled Next.js 16 agentRules (next.config.ts) to stop auto-generated AGENTS.md/CLAUDE.md from colliding with the project's committed .claude/CLAUDE.md
+- [Phase 01-02]: Added vitest.config.ts passWithNoTests: true as a short-lived interim state until 01-03 adds real tests
 
 ### Pending Todos
 
@@ -94,6 +99,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-12T21:49:10.902Z
+Last session: 2026-08-12T22:33:23.106Z
 Stopped at: Phase 1 context gathered
 Resume file: .planning/phases/01-foundation-configuration-airport-registry-resolution/01-CONTEXT.md

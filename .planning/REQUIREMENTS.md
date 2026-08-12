@@ -10,9 +10,9 @@
 
 ### Configuration & Runnability
 
-- [ ] **SETUP-01**: App validates all required credentials at startup and refuses to start with a message naming the missing variable and where to obtain it
+- [x] **SETUP-01**: App validates all required credentials at startup and refuses to start with a message naming the missing variable and where to obtain it
 - [x] **SETUP-02**: Repo ships `.env.example` and a README such that a reviewer can go from `git clone` to a working app without reading source code
-- [ ] **SETUP-03**: Config is read through one validated env module that distinguishes required from optional keys, so optional keys can be added later without touching call sites
+- [x] **SETUP-03**: Config is read through one validated env module that distinguishes required from optional keys, so optional keys can be added later without touching call sites
 
 ### Live Data Sources
 
