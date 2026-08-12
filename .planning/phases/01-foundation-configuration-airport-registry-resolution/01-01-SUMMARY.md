@@ -181,3 +181,7 @@ None - no external service configuration required. (OpenSky OAuth2 and the LLM k
 - `src/domain/airports/types.ts` is committed and stable; plans 01-03 (resolution) and 01-04 (registry fetch) can now be planned/executed against it without waiting on each other.
 - Plan 01-02 (config/env validation, `.env.example`, README rewrite) can proceed — `server-only` is already installed.
 - No blockers introduced by this plan. The end-of-phase `<human-check>` (visually confirm `npm run dev` renders without an error overlay) is still open per `human_verify_mode: end-of-phase`; an automated equivalent (curl returning HTTP 200 with expected content) was run and passed as evidence.
+
+## Self-Check: PASSED
+
+All 9 claimed created files verified present on disk; all 3 claimed commit hashes (`acc9c5a`, `3dc6150`, `4720730`) verified present in `git log`.

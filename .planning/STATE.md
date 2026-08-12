@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 1
-current_phase_name: Foundation — Configuration, Airport Registry & Resolution
+current_phase: 01
+current_phase_name: foundation-configuration-airport-registry-resolution
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-08-12T19:25:20.175Z"
+last_updated: "2026-08-12T21:49:10.912Z"
 last_activity: 2026-08-12
-last_activity_desc: ROADMAP.md created, 31/31 v1 requirements mapped to 5 phases
+last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-12)
 
 **Core value:** Every number the agent states must be traceable to a deterministic computation over real data, with its assumptions and uncertainty stated out loud.
-**Current focus:** Phase 1 — Foundation: Configuration, Airport Registry & Resolution
+**Current focus:** Phase 01 — foundation-configuration-airport-registry-resolution
 
 ## Current Position
 
-Phase: 1 of 5 (Foundation — Configuration, Airport Registry & Resolution)
-Plan: TBD — not yet planned
+Phase: 01 (foundation-configuration-airport-registry-resolution) — EXECUTING
+Plan: 2 of 4
 Status: Ready to execute
-Last activity: 2026-08-12 — ROADMAP.md created, 31/31 v1 requirements mapped to 5 phases
+Last activity: 2026-08-12 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: N/A
 
 *Updated after each plan completion*
+| Phase 01 P01 | 45min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,9 @@ Recent decisions affecting current work:
 - Roadmap: No-LLM keyword-dispatcher fallback is cut from scope (per PROJECT.md), so Phase 4 (Chat + Agent) is the earliest end-to-end demoable checkpoint, not Phase 1 as generic architecture research suggested — Phases 1-3 are unit-test-provable but not user-demoable.
 - Roadmap: Granularity is coarse but calibrated to 4-6 phases per explicit project instruction (overriding the default coarse 2-4 range) to keep the graded scoring engine (Phase 3) as an isolated, protected phase.
 - Roadmap: DOC-01 (design doc) folded into the final Security Hardening phase rather than given its own phase — single requirement, not a standalone user-observable outcome.
+- [Phase 01]: Vitest chosen as test runner (native TS/ESM, resolves @/* alias, no Babel/ts-jest bridge)
+- [Phase 01]: Registry carries no byRegion member; region lookup derives downstream from byState + state-to-region table
+- [Phase 01]: Added postinstall: next typegen so a fresh clone's npx tsc --noEmit is clean without requiring dev/build first
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-12T18:40:11.670Z
+Last session: 2026-08-12T21:49:10.902Z
 Stopped at: Phase 1 context gathered
 Resume file: .planning/phases/01-foundation-configuration-airport-registry-resolution/01-CONTEXT.md

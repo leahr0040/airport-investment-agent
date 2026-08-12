@@ -44,12 +44,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Naming an airport by IATA code, ICAO code, or common name — including Alaska/Hawaii airports (PANC, PHNL, not KANC/KHNL) — resolves to the correct canonical airport; naming a region ("New England") resolves to the correct airport set; naming an ambiguous metro reference ("LA") surfaces all candidate airports instead of silently picking one.
   5. Any airport identifier not present in the resolved registry is rejected before it can reach any outbound request.
 
-**Plans**: 4 plans (3 waves)
+**Plans**: 1/4 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Scaffold Next.js 16 + TypeScript, Vitest toolchain, and the shared airport domain contracts (wave 1)
+- [x] 01-01-PLAN.md — Scaffold Next.js 16 + TypeScript, Vitest toolchain, and the shared airport domain contracts (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Configuration, Airport Registry & Resolution | 0/4 | Not started | - |
+| 1. Foundation — Configuration, Airport Registry & Resolution | 1/4 | In Progress|  |
 | 2. Live Data Adapters & Caching | 0/TBD | Not started | - |
 | 3. Deterministic Scoring Engine | 0/TBD | Not started | - |
 | 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 0/TBD | Not started | - |
