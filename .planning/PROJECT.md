@@ -37,6 +37,10 @@ deterministic logic will not believe the agent.
 - [ ] Agent answers metric questions directly (e.g. "% of long-haul flights out of Anchorage")
 - [ ] Agent explains unmet demand for a named airport and attributes it to specific drivers
 - [ ] Design/architecture document covering scoring methodology, key tradeoffs, and where AI is used
+- [ ] Agent resists prompt injection carried in third-party API responses and in user input
+- [ ] Secrets and upstream API calls stay server-side; no key or raw upstream endpoint is reachable from the browser
+- [ ] User-supplied identifiers are validated against an allowlist before reaching any outbound request (no SSRF)
+- [ ] Per-session rate limiting on the chat endpoint so a single client cannot exhaust upstream API quota or LLM budget
 
 ### Out of Scope
 
@@ -91,6 +95,7 @@ only the Microsoft Store stub is present — which is why the stack is TypeScrip
 - **LLM cost**: Cheapest capable model — this is a throwaway project artifact, not production. Model choice is a research question, not a guess.
 - **Voice**: Not implemented, but the chat transport must not preclude it — bonus item deferred; architecture keeps the door open at zero cost.
 - **Honesty**: Every derived or assumed number must be labeled as such — the project grades on clearly communicating assumptions, uncertainty and scoping; a confident wrong number fails harder than a hedged right one.
+- **Security**: Strong guardrails required at every trust boundary — user's explicit requirement. Concretely: treat third-party API responses as untrusted input to the LLM (injection surface), keep all secrets and upstream calls server-side, allowlist-validate every user-supplied identifier before it reaches an outbound URL, and rate-limit the chat endpoint per session. These are not deferrable polish.
 
 ## Key Decisions
 
@@ -103,6 +108,7 @@ only the Microsoft Store stub is present — which is why the stack is TypeScrip
 | LLM used only for intent parsing and narration, never for numbers | Keeps every stated figure auditable; matches Core Value | — Pending |
 | Voice deferred, transport layer kept adapter-shaped | Bonus item vs. one-day budget; costs nothing now to leave the seam | — Pending |
 | App must run with no LLM API key (degraded but functional) | No key exists yet; reviewer may also lack one. Scoring + ranking must demo standalone | — Pending |
+| API responses treated as untrusted LLM input, not trusted data | An upstream field could carry injected instructions; the LLM narrates over API text, so this is a live surface, not theoretical | — Pending |
 
 ## Evolution
 
