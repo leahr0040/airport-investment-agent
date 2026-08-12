@@ -1,0 +1,1 @@
+{"content":"Vercel AI SDK streamText/generateText with tool defs supports an automatic multi-step tool-call loop (maxSteps) in Next.js route handlers; this is the standard TS agent-loop primitive for App Router.","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-08-12T13:48:55.974Z","ttl":86400000,"kind":"docs"}
