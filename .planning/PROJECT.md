@@ -37,6 +37,7 @@ deterministic logic will not believe the agent.
 - [ ] Agent answers metric questions directly (e.g. "% of long-haul flights out of Anchorage")
 - [ ] Agent explains unmet demand for a named airport and attributes it to specific drivers
 - [ ] Design/architecture document covering scoring methodology, key tradeoffs, and where AI is used
+- [ ] Live API responses are cached in memory with per-source TTLs, so repeated questions do not re-spend the daily upstream quota and the demo answers instantly
 - [ ] Agent resists prompt injection carried in third-party API responses and in user input
 - [ ] Secrets and upstream API calls stay server-side; no key or raw upstream endpoint is reachable from the browser
 - [ ] User-supplied identifiers are validated against an allowlist before reaching any outbound request (no SSRF)
@@ -46,10 +47,19 @@ deterministic logic will not believe the agent.
 
 - **Voice input/output** — bonus item; the transport layer will be built to accept a
   future voice adapter, but no speech code ships in v1. Time is better spent on scoring depth.
-- **Measured passenger volumes** — no free keyless public API publishes passenger counts;
-  those live in BTS bulk downloads. Passenger-side metrics are derived proxies (see Constraints).
+- **Measured passenger volumes** — passenger-side metrics are derived proxies (see Constraints).
+  Note: BTS passenger data *is* reachable live via the Socrata REST API on data.transportation.gov,
+  so this is a deliberate scoping choice rather than a data limitation. Documented as
+  "alternatives considered" in the design doc.
 - **Authentication / multi-user accounts** — single-analyst demo tool, no login.
-- **Persistent database** — conversation state is per-session; no user data survives restart.
+- **Persistent database (MySQL or otherwise)** — considered explicitly and rejected. A DB
+  earns its place when there is user-generated data to preserve, relationships requiring
+  joins, or queries too expensive to compute live. None apply: there are no users, the data
+  shape is `airport → metrics` on a single key, and the scoring engine is a pure function
+  that runs in milliseconds. What is actually needed is a **cache**, which is not a database.
+  Requiring a running MySQL server would also make the demo fragile on the reviewer's machine —
+  the research flagged "unrunnable demo" as a top-2 failure mode. This tradeoff belongs in
+  the design doc.
 - **Non-US airports** — the firm invests in US airports only.
 - **Production hardening** (rate-limit backoff tuning, observability, CI/CD, load testing) —
   this is a one-day project artifact, not a production service.
@@ -109,6 +119,12 @@ only the Microsoft Store stub is present — which is why the stack is TypeScrip
 | Voice deferred, transport layer kept adapter-shaped | Bonus item vs. one-day budget; costs nothing now to leave the seam | — Pending |
 | App must run with no LLM API key (degraded but functional) | No key exists yet; reviewer may also lack one. Scoring + ranking must demo standalone | — Pending |
 | API responses treated as untrusted LLM input, not trusted data | An upstream field could carry injected instructions; the LLM narrates over API text, so this is a live surface, not theoretical | — Pending |
+| Airport identity/geometry registry is bundled static data, not fetched live | Codes and coordinates are reference data, not metrics — every *measured* quantity still comes from a live API. Removes a failure mode from the most foundational layer and provides the SSRF allowlist for free | — Pending |
+| BTS passenger data via Socrata REST (data.transportation.gov) deliberately NOT used | It is genuinely live-queryable and would have supplied real passenger counts without violating the live-API rule — rejected to keep the one-day build tight and the data story consistent. Must appear in the design doc's "alternatives considered" section, since finding it and declining it is itself the judgment call | — Pending |
+| LLM: Claude Haiku 4.5 primary, Gemini 2.5 Flash fallback, via Vercel AI SDK | Haiku 4.5 is cheap ($1/$5 per Mtok) and capable enough for intent parsing + narration; Gemini Flash's free no-credit-card tier means a reviewer can run the demo without paying. SDK makes the swap one line | — Pending |
+| Caching via the `lru-cache` package, in-memory, no database | MySQL was considered and rejected — no users, no joins, no expensive queries; the need is a cache, not a database. A maintained package over a hand-rolled Map for correct TTL and eviction semantics | — Pending |
+| Per-source cache TTLs rather than one global TTL | The sources have genuinely different volatility: FAA delay status is minutes-fresh, OpenSky movement windows are hour-stable, ArcGIS runway geometry is effectively static. One TTL would either waste quota or serve stale delays | — Pending |
+| Cache is memory-only; disk persistence deferred behind the same interface | Accepted cost: a server restart drops the cache and re-spends OpenSky quota. Add a disk tier only if the quota actually bites during the build — the read interface is designed so that change touches no caller | ⚠️ Revisit |
 
 ## Evolution
 
