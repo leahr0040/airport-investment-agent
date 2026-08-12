@@ -93,4 +93,34 @@ Table-stakes-adjacent items that users would eventually expect, deferred for the
 
 | Requirement | Phase |
 |-------------|-------|
-| *(filled by roadmap)* | |
+| SETUP-01 | Phase 1 |
+| SETUP-02 | Phase 1 |
+| SETUP-03 | Phase 1 |
+| DATA-01 | Phase 1 |
+| RESOLVE-01 | Phase 1 |
+| RESOLVE-02 | Phase 1 |
+| RESOLVE-03 | Phase 1 |
+| RESOLVE-04 | Phase 1 |
+| SEC-02 | Phase 1 |
+| DATA-02 | Phase 2 |
+| DATA-03 | Phase 2 |
+| DATA-04 | Phase 2 |
+| DATA-05 | Phase 2 |
+| SCORE-01 | Phase 3 |
+| SCORE-02 | Phase 3 |
+| SCORE-03 | Phase 3 |
+| SCORE-04 | Phase 3 |
+| SCORE-05 | Phase 3 |
+| CHAT-01 | Phase 4 |
+| CHAT-02 | Phase 4 |
+| CHAT-03 | Phase 4 |
+| CHAT-04 | Phase 4 |
+| QUERY-01 | Phase 4 |
+| QUERY-02 | Phase 4 |
+| QUERY-03 | Phase 4 |
+| QUERY-04 | Phase 4 |
+| QUERY-05 | Phase 4 |
+| SEC-04 | Phase 4 |
+| SEC-01 | Phase 5 |
+| SEC-03 | Phase 5 |
+| DOC-01 | Phase 5 |
