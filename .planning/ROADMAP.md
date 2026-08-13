@@ -44,7 +44,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Naming an airport by IATA code, ICAO code, or common name — including Alaska/Hawaii airports (PANC, PHNL, not KANC/KHNL) — resolves to the correct canonical airport; naming a region ("New England") resolves to the correct airport set; naming an ambiguous metro reference ("LA") surfaces all candidate airports instead of silently picking one.
   5. Any airport identifier not present in the resolved registry is rejected before it can reach any outbound request.
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 
 Plans:
 **Wave 1**
@@ -54,7 +54,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md — Validated env module, fail-loud boot gate, `.env.example` and the reviewer runbook (wave 2)
-- [ ] 01-03-PLAN.md — Region table, metro ambiguity clusters, legacy aliases, the pure resolver and the SSRF allowlist (wave 2)
+- [x] 01-03-PLAN.md — Region table, metro ambiguity clusters, legacy aliases, the pure resolver and the SSRF allowlist (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -125,7 +125,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Configuration, Airport Registry & Resolution | 2/4 | In Progress|  |
+| 1. Foundation — Configuration, Airport Registry & Resolution | 3/4 | In Progress|  |
 | 2. Live Data Adapters & Caching | 0/TBD | Not started | - |
 | 3. Deterministic Scoring Engine | 0/TBD | Not started | - |
 | 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 0/TBD | Not started | - |

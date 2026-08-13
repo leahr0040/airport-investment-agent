@@ -24,10 +24,10 @@
 
 ### Airport Resolution
 
-- [ ] **RESOLVE-01**: Analyst can name an airport by IATA code, ICAO code, or common name and get the correct canonical airport
-- [ ] **RESOLVE-02**: Resolution handles the Alaska and Hawaii ICAO prefixes correctly (PANC, PHNL — not KANC/KHNL)
-- [ ] **RESOLVE-03**: Analyst can name a region ("New England") and get the correct set of airports
-- [ ] **RESOLVE-04**: When a reference is ambiguous across a metro cluster ("LA" → LAX/BUR/LGB/SNA/ONT), the agent surfaces the ambiguity rather than silently picking one
+- [x] **RESOLVE-01**: Analyst can name an airport by IATA code, ICAO code, or common name and get the correct canonical airport
+- [x] **RESOLVE-02**: Resolution handles the Alaska and Hawaii ICAO prefixes correctly (PANC, PHNL — not KANC/KHNL)
+- [x] **RESOLVE-03**: Analyst can name a region ("New England") and get the correct set of airports
+- [x] **RESOLVE-04**: When a reference is ambiguous across a metro cluster ("LA" → LAX/BUR/LGB/SNA/ONT), the agent surfaces the ambiguity rather than silently picking one
 
 ### Deterministic Scoring Engine
 
@@ -55,7 +55,7 @@
 ### Security
 
 - [ ] **SEC-01**: Secrets and all upstream API calls are server-side only; no key or upstream endpoint is reachable from the browser
-- [ ] **SEC-02**: Every user-supplied airport identifier is validated against the resolved airport allowlist before it can reach an outbound request
+- [x] **SEC-02**: Every user-supplied airport identifier is validated against the resolved airport allowlist before it can reach an outbound request
 - [ ] **SEC-03**: The chat endpoint is rate-limited per session so one client cannot exhaust the upstream quota or LLM budget
 - [ ] **SEC-04**: Text from third-party API responses is treated as untrusted data when it enters LLM context and cannot act as instructions
 

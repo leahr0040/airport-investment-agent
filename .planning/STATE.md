@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: foundation-configuration-airport-registry-resolution
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-08-12T22:35:10.476Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-08-13T05:04:07.280Z"
 last_activity: 2026-08-12
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 ## Current Position
 
 Phase: 01 (foundation-configuration-airport-registry-resolution) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-08-12 — Phase 01 execution started
 
@@ -57,6 +57,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 01 P01 | 45min | 3 tasks | 9 files |
 | Phase 01 P02 | 40min | 2 tasks | 6 files |
+| Phase 01-foundation-configuration-airport-registry-resolution P03 | 45min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 01-02]: No automated unit test for env.ts (server-only unconditionally throws under plain Vitest); SETUP-01 verified manually via live dev-server runs
 - [Phase 01-02]: Disabled Next.js 16 agentRules (next.config.ts) to stop auto-generated AGENTS.md/CLAUDE.md from colliding with the project's committed .claude/CLAUDE.md
 - [Phase 01-02]: Added vitest.config.ts passWithNoTests: true as a short-lived interim state until 01-03 adds real tests
+- [Phase 01-03]: Table-driven resolution branches (metro/region/state) commit to their kind on query-text match against the governing alias table alone, independent of whether the current registry holds any matching airports for that entry — only the free-text substring branch requires a non-empty result to fire
+- [Phase 01-03]: allowlist.ts deliberately normalises with trim+uppercase only (never reusing resolve.ts's punctuation-stripping normalizeQuery), so a malformed identifier is never rehabilitated into a valid-looking one before the AIRPORT_CODE_PATTERN shape check runs
 
 ### Pending Todos
 
@@ -99,6 +102,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-12T22:33:23.106Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-foundation-configuration-airport-registry-resolution/01-CONTEXT.md
+Last session: 2026-08-13T05:04:07.271Z
+Stopped at: Completed 01-03-PLAN.md
+Resume file: None
