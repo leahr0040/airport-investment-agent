@@ -125,7 +125,7 @@ describe('FAA NAS Status adapter', () => {
     expect(res.data.events[0].type).toBe('Some Future Delay Category');
   });
 
-  it('matches the FAA LID divergence: KPBI queries PBI even though regions.ts carries IATA DJT', async () => {
+  it('matches the FAA LID divergence: KPBI queries PBI via the generic prefix-strip rule', async () => {
     const closurePbi = `
       <Delay_type>
         <Name>Airport Closures</Name>

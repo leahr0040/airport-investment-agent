@@ -32,10 +32,6 @@ describe('lookupAirports', () => {
     ]);
   });
 
-  it('resolves the legacy PBI alias to DJT/KPBI', () => {
-    expect(lookupAirports('PBI')).toEqual([{ iata: 'DJT', icao: 'KPBI' }]);
-  });
-
   it('resolves Alaska and Hawaii from the table, not the K-prefix rule', () => {
     expect(lookupAirports('Alaska')).toEqual([{ iata: 'ANC', icao: 'PANC' }]);
     expect(lookupAirports('Hawaii')).toEqual([{ iata: 'HNL', icao: 'PHNL' }]);
@@ -47,6 +43,7 @@ describe('lookupAirports', () => {
     expect(lookupAirports('anc')).toEqual([{ iata: 'ANC', icao: 'PANC' }]);
     expect(lookupAirports('hnl')).toEqual([{ iata: 'HNL', icao: 'PHNL' }]);
     expect(lookupAirports('katl')).toEqual([{ iata: 'ATL', icao: 'KATL' }]);
+    expect(lookupAirports('PBI')).toEqual([{ iata: 'PBI', icao: 'KPBI' }]);
   });
 
   it('carries a well-formed {iata, icao} pair on every table entry', () => {

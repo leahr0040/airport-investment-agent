@@ -33,9 +33,9 @@ function ensureArray<T>(maybe: T | T[] | undefined | null): T[] {
 }
 
 // US ICAO codes are a single country-prefix letter followed by the 3-letter FAA location
-// identifier - KATL -> ATL, PANC -> ANC. Deriving from ICAO (not IATA) is deliberate: the FAA
-// feed keys West Palm Beach as PBI while regions.ts carries its IATA code as DJT after the
-// 2026 rename, so an IATA-based match would silently return an empty event list for that airport.
+// identifier - KATL -> ATL, PANC -> ANC. Deriving from ICAO (not IATA) is deliberate: ICAO
+// deterministically encodes the FAA LID via this prefix-strip rule, while IATA is not guaranteed
+// to equal the FAA LID for every airport and regions.ts carries no separate IATA->LID mapping.
 export function toFaaLid(icao: string): string {
   return icao.trim().toUpperCase().slice(1);
 }

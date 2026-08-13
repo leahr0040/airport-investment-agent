@@ -35,7 +35,7 @@ const REGION_LOOKUP: Readonly<Record<string, readonly AirportCodes[]>> = {
   south: [
     { iata: 'MIA', icao: 'KMIA' },
     { iata: 'FLL', icao: 'KFLL' },
-    { iata: 'DJT', icao: 'KPBI' }, // FAA renamed IATA PBI -> DJT; ICAO remained KPBI
+    { iata: 'PBI', icao: 'KPBI' },
     { iata: 'ATL', icao: 'KATL' },
   ],
   midwest: [
@@ -127,11 +127,8 @@ const REGION_LOOKUP: Readonly<Record<string, readonly AirportCodes[]>> = {
   'south florida': [
     { iata: 'MIA', icao: 'KMIA' },
     { iata: 'FLL', icao: 'KFLL' },
-    { iata: 'DJT', icao: 'KPBI' },
+    { iata: 'PBI', icao: 'KPBI' },
   ],
-
-  // Legacy code alias (FAA renamed West Palm Beach's IATA code PBI -> DJT, 2026-08-18)
-  pbi: [{ iata: 'DJT', icao: 'KPBI' }],
 };
 
 export function regionKeys(): string[] {

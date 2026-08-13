@@ -26,7 +26,7 @@ describe("isValidIcao", () => {
 describe("isValidIata", () => {
   it("accepts exactly three uppercase letters", () => {
     expect(isValidIata("ATL")).toEqual(true);
-    expect(isValidIata("DJT")).toEqual(true);
+    expect(isValidIata("PBI")).toEqual(true);
   });
 
   it("rejects ICAO-length and lower-case codes", () => {
