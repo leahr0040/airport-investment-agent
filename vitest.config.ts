@@ -9,11 +9,16 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     testTimeout: 30000,
-    passWithNoTests: true,
+    env: {
+      OPENSKY_CLIENT_ID: "test-opensky-client-id",
+      OPENSKY_CLIENT_SECRET: "test-opensky-client-secret",
+      GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key",
+    },
   },
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
+      "server-only": resolve(__dirname, "test/stubs/server-only.ts"),
     },
   },
 });
