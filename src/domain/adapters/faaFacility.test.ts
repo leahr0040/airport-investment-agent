@@ -87,6 +87,38 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
     expect(res.data.runways).toHaveLength(2);
   });
 
+  it('parses null/undefined ArcGIS numeric fields to null, never 0 or a fabricated coordinate', async () => {
+    mockedAxios.get.mockResolvedValueOnce(
+      axiosResponse(200, facilityFeature({ LAT_DECIMAL: null, LONG_DECIMAL: null })),
+    );
+    mockedAxios.get.mockResolvedValueOnce(
+      axiosResponse(
+        200,
+        runwayFeatures([
+          {
+            RWY_ID: '08L/26R',
+            RWY_LEN: null,
+            RWY_WIDTH: undefined,
+            LAT1_DECIMAL: null,
+            LONG1_DECIMAL: null,
+            LAT2_DECIMAL: undefined,
+            LONG2_DECIMAL: undefined,
+          },
+        ]),
+      ),
+    );
+
+    const res = await fetchFaaFacility('KATL');
+    expect(res.ok).toBe(true);
+    if (!res.ok) throw new Error('expected ok result');
+    expect(res.data.lat).toBeNull();
+    expect(res.data.lon).toBeNull();
+    expect(res.data.runways[0].lengthFt).toBeNull();
+    expect(res.data.runways[0].widthFt).toBeNull();
+    expect(res.data.runways[0].end1).toBeNull();
+    expect(res.data.runways[0].end2).toBeNull();
+  });
+
   it('returns no_data with no runway query when the facility result is empty', async () => {
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
 
