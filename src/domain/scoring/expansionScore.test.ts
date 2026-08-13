@@ -244,6 +244,26 @@ describe('expansionScore (phase plan)', () => {
     expect(a).toEqual(b);
   });
 
+  it('case group 7 (WR-04): zero-runway facility yields headroom unavailable with reason no_data', () => {
+    const T = {
+      icao: 'T',
+      movements: ok(movementsWithCallsigns([...Array(10).fill('UAL1')])),
+      facility: ok(facilityWithRunways(0)),
+      nasStatus: ok(nasStatusWithEvents(0)),
+    };
+
+    const results = scoreAirports([T]);
+    const t = results[0];
+
+    expect(t.components.headroom.available).toBe(false);
+    expect((t.components.headroom as any).reason).toBe('no_data');
+    expect(t.components.headroom.kpi).toBeNull();
+    expect(t.components.headroom.normalized).toBeNull();
+    expect(t.components.headroom.contribution).toBeNull();
+    expect(t.components.volume.available).toBe(true);
+    expect(t.components.delayFrequency.available).toBe(true);
+  });
+
   it('case group 6: cargo-carrier allowlist membership and null callsign handling', () => {
     // ensure DAL is present in the allowlist per plan
     expect(CARGO_CALLSIGN_PREFIXES.includes('DAL' as any)).toBe(true);

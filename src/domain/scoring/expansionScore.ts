@@ -58,6 +58,8 @@ export function computeVolumeKpi(movements: Movements): VolumeKpi {
   return { passengerMovements, cargoMovements, totalMovements };
 }
 
+// Precondition: caller must only invoke this with facility.runways.length > 0 —
+// zero-runway facilities are routed to an unavailable component before this is called.
 export function computeHeadroomKpi(movements: Movements, facility: FaaFacility): HeadroomKpi {
   const totalMovements = movements.departureCount + movements.arrivalCount;
   const runwayCount = facility.runways.length;
@@ -88,7 +90,10 @@ export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
   // temporary store KPIs per input
   const tmp = inputs.map((input) => {
     const vol = input.movements.ok ? computeVolumeKpi(input.movements.data) : null;
-    const head = input.movements.ok && input.facility.ok ? computeHeadroomKpi(input.movements.data, input.facility.data) : null;
+    const head =
+      input.movements.ok && input.facility.ok && input.facility.data.runways.length > 0
+        ? computeHeadroomKpi(input.movements.data, input.facility.data)
+        : null;
     const delay = input.nasStatus.ok ? computeDelayKpi(input.nasStatus.data) : null;
     if (vol) volumeDataset.push(vol.passengerMovements);
     if (head) headroomDataset.push(head.movementsPerRunway);
@@ -130,7 +135,10 @@ export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
           kpi: null,
           normalized: null,
           contribution: null,
-          reason: reasonOf(input.movements) ?? reasonOf(input.facility) ?? 'error',
+          reason:
+            reasonOf(input.movements) ??
+            reasonOf(input.facility) ??
+            (input.facility.ok && input.facility.data.runways.length === 0 ? 'no_data' : 'error'),
         };
 
     const delayComponent: ComponentResult<DelayKpi> = delayAvailable
