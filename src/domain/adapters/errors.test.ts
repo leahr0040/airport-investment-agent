@@ -33,7 +33,9 @@ describe("toAdapterFailure", () => {
     const result = toAdapterFailure(error);
 
     expect(result).toEqual({ ok: false, reason: "error", detail: "FetchError" });
-    expect(result.ok && result.detail).not.toContain(secret);
+    if (!result.ok) {
+      expect(result.detail).not.toContain(secret);
+    }
   });
 
   it("returns a valid error result for a non-Error thrown value", () => {
