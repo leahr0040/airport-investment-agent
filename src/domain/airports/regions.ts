@@ -1,166 +1,50 @@
 /**
- * State-to-region table and region/state lookup helpers (D-03/D-04/D-05).
- *
- * Pure data plus pure functions — no I/O, no imports beyond ./types.
+ * Airport location lookup: a flat, hardcoded map from region/metro names to
+ * IATA codes, plus a couple of legacy code aliases (FAA's 2026 PBI -> DJT
+ * rename). No live registry, no distance calculations. The LLM (Phase 4) does
+ * the natural-language extraction; this table just expands a known name to
+ * its airports, or passes a bare code through as-is.
  */
 
-import type { AirportRef, RegionName, Registry } from './types';
+const REGION_LOOKUP: Readonly<Record<string, readonly string[]>> = {
+  // Regions
+  'new england': ['BOS', 'BDL', 'PWM'],
+  'mid-atlantic': ['JFK', 'LGA', 'EWR', 'DCA', 'IAD', 'BWI'],
+  'mid atlantic': ['JFK', 'LGA', 'EWR', 'DCA', 'IAD', 'BWI'],
+  south: ['MIA', 'FLL', 'DJT', 'ATL'],
+  midwest: ['ORD', 'MDW'],
+  southwest: ['DFW', 'IAH', 'AUS'],
+  'mountain west': ['DEN', 'SLC'],
+  pacific: ['SFO', 'OAK', 'SJC', 'LAX', 'SEA', 'PDX'],
+  'west coast': ['SFO', 'OAK', 'SJC', 'LAX', 'SEA', 'PDX'],
+  alaska: ['ANC'],
+  hawaii: ['HNL'],
 
-// This is a common-usage grouping, not the literal US Census division scheme;
-// TX, MO, KY and WV are the contestable placements (RESEARCH.md assumption A1).
-export const STATE_TO_REGION: Readonly<Record<string, RegionName>> = {
-  // New England
-  CT: 'New England',
-  ME: 'New England',
-  MA: 'New England',
-  NH: 'New England',
-  RI: 'New England',
-  VT: 'New England',
-  // Mid-Atlantic (DC included per D-05)
-  DE: 'Mid-Atlantic',
-  DC: 'Mid-Atlantic',
-  MD: 'Mid-Atlantic',
-  NJ: 'Mid-Atlantic',
-  NY: 'Mid-Atlantic',
-  PA: 'Mid-Atlantic',
-  VA: 'Mid-Atlantic',
-  WV: 'Mid-Atlantic',
-  // South
-  AL: 'South',
-  AR: 'South',
-  FL: 'South',
-  GA: 'South',
-  KY: 'South',
-  LA: 'South',
-  MS: 'South',
-  NC: 'South',
-  SC: 'South',
-  TN: 'South',
-  // Midwest
-  IL: 'Midwest',
-  IN: 'Midwest',
-  IA: 'Midwest',
-  KS: 'Midwest',
-  MI: 'Midwest',
-  MN: 'Midwest',
-  MO: 'Midwest',
-  NE: 'Midwest',
-  ND: 'Midwest',
-  OH: 'Midwest',
-  SD: 'Midwest',
-  WI: 'Midwest',
-  // Southwest
-  AZ: 'Southwest',
-  NM: 'Southwest',
-  OK: 'Southwest',
-  TX: 'Southwest',
-  // Mountain West
-  CO: 'Mountain West',
-  ID: 'Mountain West',
-  MT: 'Mountain West',
-  NV: 'Mountain West',
-  UT: 'Mountain West',
-  WY: 'Mountain West',
-  // Pacific
-  CA: 'Pacific',
-  OR: 'Pacific',
-  WA: 'Pacific',
-  // Alaska / Hawaii
-  AK: 'Alaska',
-  HI: 'Hawaii',
+  // Metro aggregations
+  la: ['LAX', 'BUR', 'LGB', 'SNA', 'ONT'],
+  'los angeles': ['LAX', 'BUR', 'LGB', 'SNA', 'ONT'],
+  nyc: ['JFK', 'LGA', 'EWR'],
+  'new york': ['JFK', 'LGA', 'EWR'],
+  'new york city': ['JFK', 'LGA', 'EWR'],
+  'bay area': ['SFO', 'OAK', 'SJC'],
+  'san francisco bay area': ['SFO', 'OAK', 'SJC'],
+  dc: ['DCA', 'IAD', 'BWI'],
+  'washington dc': ['DCA', 'IAD', 'BWI'],
+  chicago: ['ORD', 'MDW'],
+  'south florida': ['MIA', 'FLL', 'DJT'],
+
+  // Legacy code alias (FAA renamed West Palm Beach's IATA code PBI -> DJT, 2026-08-18)
+  pbi: ['DJT'],
 };
 
-export const STATE_NAME_TO_CODE: Readonly<Record<string, string>> = {
-  alabama: 'AL',
-  alaska: 'AK',
-  arizona: 'AZ',
-  arkansas: 'AR',
-  california: 'CA',
-  colorado: 'CO',
-  connecticut: 'CT',
-  delaware: 'DE',
-  'district of columbia': 'DC',
-  florida: 'FL',
-  georgia: 'GA',
-  hawaii: 'HI',
-  idaho: 'ID',
-  illinois: 'IL',
-  indiana: 'IN',
-  iowa: 'IA',
-  kansas: 'KS',
-  kentucky: 'KY',
-  louisiana: 'LA',
-  maine: 'ME',
-  maryland: 'MD',
-  massachusetts: 'MA',
-  michigan: 'MI',
-  minnesota: 'MN',
-  mississippi: 'MS',
-  missouri: 'MO',
-  montana: 'MT',
-  nebraska: 'NE',
-  nevada: 'NV',
-  'new hampshire': 'NH',
-  'new jersey': 'NJ',
-  'new mexico': 'NM',
-  'new york': 'NY',
-  'north carolina': 'NC',
-  'north dakota': 'ND',
-  ohio: 'OH',
-  oklahoma: 'OK',
-  oregon: 'OR',
-  pennsylvania: 'PA',
-  'rhode island': 'RI',
-  'south carolina': 'SC',
-  'south dakota': 'SD',
-  tennessee: 'TN',
-  texas: 'TX',
-  utah: 'UT',
-  vermont: 'VT',
-  virginia: 'VA',
-  washington: 'WA',
-  'west virginia': 'WV',
-  wisconsin: 'WI',
-  wyoming: 'WY',
-};
-
-export const REGION_ALIASES: Readonly<Record<string, RegionName>> = {
-  'new england': 'New England',
-  'mid-atlantic': 'Mid-Atlantic',
-  'mid atlantic': 'Mid-Atlantic',
-  midatlantic: 'Mid-Atlantic',
-  south: 'South',
-  'the south': 'South',
-  midwest: 'Midwest',
-  'mid-west': 'Midwest',
-  southwest: 'Southwest',
-  'south west': 'Southwest',
-  'mountain west': 'Mountain West',
-  mountain: 'Mountain West',
-  pacific: 'Pacific',
-  'west coast': 'Pacific',
-  'pacific/west coast': 'Pacific',
-  alaska: 'Alaska',
-  hawaii: 'Hawaii',
-};
-
-export function regionForState(stateCode: string): RegionName | undefined {
-  return STATE_TO_REGION[stateCode.toUpperCase()];
-}
-
-export function airportsInRegion(region: RegionName, registry: Registry): AirportRef[] {
-  const states = Object.keys(STATE_TO_REGION).filter(
-    (state) => STATE_TO_REGION[state] === region,
-  );
-  const airports: AirportRef[] = [];
-  for (const state of states) {
-    const forState = registry.byState.get(state);
-    if (forState) airports.push(...forState);
-  }
-  return airports.sort((a, b) => a.iata.localeCompare(b.iata));
-}
-
-export function airportsInState(stateCode: string, registry: Registry): AirportRef[] {
-  const forState = registry.byState.get(stateCode.toUpperCase());
-  return forState ? [...forState].sort((a, b) => a.iata.localeCompare(b.iata)) : [];
+/**
+ * Converts an already-extracted name or code into an array of IATA strings.
+ * A recognised region/metro name expands to its airports; anything else is
+ * assumed to already be an airport code and is passed through uppercased.
+ */
+export function lookupAirports(query: string): string[] {
+  const key = query.trim().toLowerCase();
+  const known = REGION_LOOKUP[key];
+  if (known) return [...known];
+  return [query.trim().toUpperCase()];
 }

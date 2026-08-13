@@ -13,7 +13,7 @@ progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -76,8 +76,11 @@ Recent decisions affecting current work:
 - [Phase 01-02]: No automated unit test for env.ts (server-only unconditionally throws under plain Vitest); SETUP-01 verified manually via live dev-server runs
 - [Phase 01-02]: Disabled Next.js 16 agentRules (next.config.ts) to stop auto-generated AGENTS.md/CLAUDE.md from colliding with the project's committed .claude/CLAUDE.md
 - [Phase 01-02]: Added vitest.config.ts passWithNoTests: true as a short-lived interim state until 01-03 adds real tests
-- [Phase 01-03]: Table-driven resolution branches (metro/region/state) commit to their kind on query-text match against the governing alias table alone, independent of whether the current registry holds any matching airports for that entry — only the free-text substring branch requires a non-empty result to fire
-- [Phase 01-03]: allowlist.ts deliberately normalises with trim+uppercase only (never reusing resolve.ts's punctuation-stripping normalizeQuery), so a malformed identifier is never rehabilitated into a valid-looking one before the AIRPORT_CODE_PATTERN shape check runs
+- [Phase 01-03, superseded]: Table-driven resolution branches (metro/region/state) commit to their kind on query-text match against the governing alias table alone, independent of whether the current registry holds any matching airports for that entry — only the free-text substring branch requires a non-empty result to fire. *(This entire resolver was deleted in the 2026-08-13 pivot below — kept here for history.)*
+- [Phase 01-03, superseded]: allowlist.ts deliberately normalises with trim+uppercase only (never reusing resolve.ts's punctuation-stripping normalizeQuery), so a malformed identifier is never rehabilitated into a valid-looking one before the AIRPORT_CODE_PATTERN shape check runs. *(allowlist.ts was deleted in the 2026-08-13 pivot below.)*
+- [Phase 01, architecture pivot, 2026-08-13]: By explicit user direction (24-hour deadline, "aggressively simplify"), deleted `resolve.ts`, `allowlist.ts`, `registry.ts`, `fetchArcGis.ts`, `geometry.ts`, `metroClusters.ts`, `aliases.ts`, `types.ts`, and the test-fixture registry — all built and passing (44/44 tests) at the time of deletion. Replaced with one file, `src/domain/airports/regions.ts`, exporting a hardcoded `Record<string, string[]>` of ~15 region/metro names and `lookupAirports(query): string[]`. Rationale: NLU (what did the analyst mean) moves to the Phase 4 LLM; Phase 1's job shrinks to a convenience lookup for known names.
+- [Phase 01, architecture pivot, 2026-08-13]: Explicitly asked whether SEC-02's allowlist gate should survive the cut — user chose "simple validation that the value looks like we expected, not allowlist" — but that intermediate (format-only) design was itself cut one message later in favor of deleting `allowlist.ts` entirely. Current code performs **no validation at all** before an identifier could reach an outbound call. This contradicts CLAUDE.md's explicit "SEC-02 is not deferrable polish." Flagged in REQUIREMENTS.md; needs a decision before Phase 2 wires any outbound HTTP call.
+- [Phase 01, architecture pivot, 2026-08-13]: DATA-01 (live FAA ArcGIS runway/facility registry — the project's only source for physical-capacity data: runway count/length/parallel-runway separation) was fully built in 01-04, then deleted. No replacement exists. QUERY-04 (Phase 4) explicitly depends on "runway geometry ... cross-referenced with observed delay conditions" — that data source no longer exists anywhere in the codebase. Needs a decision before Phase 3 (scoring) planning: rebuild as a per-request live call, or drop the physical-capacity signal from scope.
 
 ### Pending Todos
 
@@ -88,6 +91,9 @@ None yet.
 - OpenSky OAuth2 client registration is a blocking prerequisite for Phase 2 and must happen before that phase starts (5-minute free registration, not yet done as of roadmap creation).
 - Gemini API key provisioning (no credit card required, free tier) is a blocking prerequisite for Phase 4.
 - Exact scoring weights (Phase 3) and the cargo-carrier callsign list (SCORE-04) are undetermined and need to be settled during Phase 3 planning — no labeled outcome data exists to fit them against; mitigation is disclosure (visible weight table), not further research.
+- **[New, 2026-08-13]** No airport-identifier validation exists anywhere in the codebase (SEC-02's allowlist was deleted). Before Phase 2 wires any outbound HTTP call keyed by an airport code, decide whether to reintroduce at least format validation.
+- **[New, 2026-08-13]** No live physical-capacity data source exists (DATA-01's FAA ArcGIS registry was deleted). QUERY-04 (Phase 4) is written against runway-separation data that no longer has a source. Needs a decision before Phase 3 planning.
+- **[New, 2026-08-13]** Phase 2's context-gathering session (`02-CONTEXT.md`) ran concurrently with this pivot and may have been scoped against the old resolver/registry API surface — worth a quick sanity check before `/gsd-plan-phase 2`.
 
 ## Deferred Items
 

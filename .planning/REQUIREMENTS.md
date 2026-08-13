@@ -16,7 +16,7 @@
 
 ### Live Data Sources
 
-- [ ] **DATA-01**: System fetches US airport facility and runway data from the FAA ArcGIS API at startup and caches it as the canonical airport registry, retaining per-runway geometry (count, length, and parallel-runway separation) since separation drives all-weather capacity
+- [ ] **DATA-01**: System fetches US airport facility and runway data from the FAA ArcGIS API at startup and caches it as the canonical airport registry, retaining per-runway geometry (count, length, and parallel-runway separation) since separation drives all-weather capacity — **built in Phase 1 plan 01-04 (`fetchArcGis.ts`/`geometry.ts`/`registry.ts`), then deleted 2026-08-13 in the architecture pivot below. No physical-capacity data source exists anywhere in the codebase right now; needs a decision (rebuild per-request in Phase 2/3, or drop the physical-capacity signal from scoring) before Phase 3 planning.**
 - [ ] **DATA-02**: System fetches per-airport departures and arrivals from OpenSky over an explicit, stated time window using OAuth2 client credentials
 - [ ] **DATA-03**: System fetches current delay and closure status from the FAA NAS Status API
 - [ ] **DATA-04**: All upstream responses are cached via `lru-cache` with a TTL chosen per source, reflecting each source's actual volatility
@@ -24,10 +24,28 @@
 
 ### Airport Resolution
 
-- [x] **RESOLVE-01**: Analyst can name an airport by IATA code, ICAO code, or common name and get the correct canonical airport
-- [x] **RESOLVE-02**: Resolution handles the Alaska and Hawaii ICAO prefixes correctly (PANC, PHNL — not KANC/KHNL)
-- [x] **RESOLVE-03**: Analyst can name a region ("New England") and get the correct set of airports
-- [x] **RESOLVE-04**: When a reference is ambiguous across a metro cluster ("LA" → LAX/BUR/LGB/SNA/ONT), the agent surfaces the ambiguity rather than silently picking one
+> **Architecture pivot — 2026-08-13.** The original Phase 1 design (plan 01-03: a pure `resolve()`
+> dispatcher doing code/alias/metro/region/state/name-substring matching against a live ~500-airport
+> registry, backed by a registry-membership SSRF allowlist in `allowlist.ts`) was replaced, by explicit
+> user direction under the 24-hour deadline, with a single hardcoded lookup table
+> (`src/domain/airports/regions.ts`, `lookupAirports(query): string[]`). Natural-language extraction
+> (deciding what airport/region/metro the analyst meant) moves to the LLM in Phase 4; Phase 1's job is
+> now just expanding a handful of known region/metro names to IATA codes, or passing an already-extracted
+> code through uppercased. `resolve.ts`, `allowlist.ts`, `registry.ts`, `fetchArcGis.ts`, `geometry.ts`,
+> `metroClusters.ts`, and `aliases.ts` were deleted; `types.ts` (Registry/AirportRef/ResolveResult/etc.)
+> was deleted as no longer referenced. See `01-03-SUMMARY.md` for the full rationale and what was
+> knowingly traded away (registry-wide coverage, ambiguity metadata, and the SEC-02 validation gate —
+> flagged explicitly there since SEC-02 elsewhere in this document is called out as non-deferrable).
+>
+> The four checkboxes below are unchecked because the *originally specified* behavior (registry-backed,
+> code-verified, covering the live ~500-airport dataset) no longer exists in code. What exists now is a
+> much narrower substitute: a curated list of well-known regions/metros, with no formal ambiguity
+> signal and no correctness guarantee beyond the hardcoded table.
+
+- [ ] **RESOLVE-01**: Analyst can name an airport by IATA code, ICAO code, or common name and get the correct canonical airport — common-name/city matching no longer exists in code; deferred to the Phase 4 LLM
+- [ ] **RESOLVE-02**: Resolution handles the Alaska and Hawaii ICAO prefixes correctly (PANC, PHNL — not KANC/KHNL) — no code-level ICAO validation exists anymore; a caller can pass any string through
+- [ ] **RESOLVE-03**: Analyst can name a region ("New England") and get the correct set of airports — holds only for the ~15 hardcoded region/metro keys in `regions.ts`, not derived from a live dataset
+- [ ] **RESOLVE-04**: When a reference is ambiguous across a metro cluster ("LA" → LAX/BUR/LGB/SNA/ONT), the agent surfaces the ambiguity rather than silently picking one — `lookupAirports` still returns all candidate codes as an array (never silently narrows to one), but there is no explicit `ambiguous` flag or disclosure note anymore
 
 ### Deterministic Scoring Engine
 
@@ -55,7 +73,7 @@
 ### Security
 
 - [ ] **SEC-01**: Secrets and all upstream API calls are server-side only; no key or upstream endpoint is reachable from the browser
-- [x] **SEC-02**: Every user-supplied airport identifier is validated against the resolved airport allowlist before it can reach an outbound request
+- [ ] **SEC-02**: Every user-supplied airport identifier is validated against the resolved airport allowlist before it can reach an outbound request — **the allowlist (`allowlist.ts`) was deleted in the 2026-08-13 architecture pivot by explicit user decision. Nothing in the codebase currently validates an airport identifier's shape or existence before it could reach an outbound URL. This directly contradicts this project's own CLAUDE.md, which calls SEC-02-style validation "not deferrable polish" — flagged here, not silently dropped. Needs a decision before Phase 2 wires any outbound call: reintroduce format-only validation at minimum, or accept the gap knowingly.**
 - [ ] **SEC-03**: The chat endpoint is rate-limited per session so one client cannot exhaust the upstream quota or LLM budget
 - [ ] **SEC-04**: Text from third-party API responses is treated as untrusted data when it enters LLM context and cannot act as instructions
 

@@ -23,7 +23,7 @@ documents what already works rather than adding new behavior.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation — Configuration, Airport Registry & Resolution** - App boots only with valid config; every airport reference (code, name, region) resolves correctly or surfaces its ambiguity
+- [x] **Phase 1: Foundation — Configuration, Airport Registry & Resolution** - App boots only with valid config; a hardcoded lookup table expands known region/metro names to airport codes (scope reduced 2026-08-13 — see Phase Details)
 - [ ] **Phase 2: Live Data Adapters & Caching** - OpenSky and FAA NAS status are fetched, cached per-source, and fail in isolation
 - [ ] **Phase 3: Deterministic Scoring Engine** - The graded core: a pure, zero-I/O, unit-tested Expansion Opportunity Score with visible weights and cargo/passenger separation
 - [ ] **Phase 4: Conversational Agent — Chat, Tool-Calling & Analyst Questions** - Analyst asks questions in plain English and gets ranked, explained, narrated answers with follow-up support
@@ -33,18 +33,26 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 1: Foundation — Configuration, Airport Registry & Resolution
 
-**Goal**: The app boots reliably with validated configuration, and every analyst-supplied airport reference (code, name, or region) resolves to the correct canonical airport(s) or surfaces its ambiguity — never guesses, never lets an unsafe identifier reach an outbound request.
+> **Architecture pivot — 2026-08-13.** After 01-03 and 01-04 were both executed as originally planned
+> (pure resolver + registry-backed allowlist + live FAA ArcGIS registry fetch, 44/44 tests passing),
+> the user directed an aggressive simplification for the 24-hour deadline: the resolver, registry,
+> allowlist, and ArcGIS fetch/geometry code were all deleted and replaced with one hardcoded
+> region/metro → IATA-codes lookup table (`src/domain/airports/regions.ts`). NLU (deciding what an
+> analyst meant) and any future identifier validation both move downstream to Phase 4/Phase 2. The
+> goal and success criteria below are rewritten to match what Phase 1 actually delivers now; see
+> `01-03-SUMMARY.md` for the full before/after and REQUIREMENTS.md for the specific requirements this
+> weakens (RESOLVE-01..04, DATA-01, SEC-02).
+
+**Goal**: The app boots reliably with validated configuration, and a small set of known region/metro names expand to their airport codes via a hardcoded lookup table; full natural-language resolution, live registry data, and identifier validation are deferred to later phases.
 **Depends on**: Nothing (first phase)
-**Requirements**: SETUP-01, SETUP-02, SETUP-03, DATA-01, RESOLVE-01, RESOLVE-02, RESOLVE-03, RESOLVE-04, SEC-02
+**Requirements**: SETUP-01, SETUP-02, SETUP-03, RESOLVE-03 (partial — see REQUIREMENTS.md)
 **Success Criteria** (what must be TRUE):
 
   1. Starting the app with a required credential missing fails immediately with a message naming that specific variable and where to obtain it, read through one validated env module.
   2. A reviewer can go from `git clone` to a running app using only `.env.example` and the README, without reading source code.
-  3. At startup, the app fetches the FAA ArcGIS facility/runway dataset into the in-memory registry, retaining per-runway geometry (count, length, parallel-runway separation).
-  4. Naming an airport by IATA code, ICAO code, or common name — including Alaska/Hawaii airports (PANC, PHNL, not KANC/KHNL) — resolves to the correct canonical airport; naming a region ("New England") resolves to the correct airport set; naming an ambiguous metro reference ("LA") surfaces all candidate airports instead of silently picking one.
-  5. Any airport identifier not present in the resolved registry is rejected before it can reach any outbound request.
+  3. `lookupAirports(query)` expands a known region/metro name (e.g. "New England", "LA", "Bay Area") to its hardcoded IATA code list, and passes any other input through uppercased as a single-element array.
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans executed (01-04 superseded — see note above)
 
 Plans:
 **Wave 1**
@@ -54,11 +62,11 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md — Validated env module, fail-loud boot gate, `.env.example` and the reviewer runbook (wave 2)
-- [x] 01-03-PLAN.md — Region table, metro ambiguity clusters, legacy aliases, the pure resolver and the SSRF allowlist (wave 2)
+- [x] 01-03-PLAN.md — Originally: region table, metro ambiguity clusters, legacy aliases, the pure resolver and the SSRF allowlist. Superseded 2026-08-13: consolidated into one hardcoded `lookupAirports()` table (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-04-PLAN.md — FAA ArcGIS registry fetch, runway parallel-group geometry, and boot wiring (wave 3)
+- [x] 01-04-PLAN.md — SUPERSEDED 2026-08-13: FAA ArcGIS registry fetch, runway parallel-group geometry, and boot wiring were built and passing, then deleted in the architecture pivot. No live registry exists; see REQUIREMENTS.md DATA-01 note. (wave 3)
 
 ### Phase 2: Live Data Adapters & Caching
 
@@ -125,7 +133,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation — Configuration, Airport Registry & Resolution | 3/4 | In Progress|  |
+| 1. Foundation — Configuration, Airport Registry & Resolution | 4/4 | Complete (scope reduced 2026-08-13) | 2026-08-13 |
 | 2. Live Data Adapters & Caching | 0/TBD | Not started | - |
 | 3. Deterministic Scoring Engine | 0/TBD | Not started | - |
 | 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 0/TBD | Not started | - |
