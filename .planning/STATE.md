@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 Phase: 03 (Deterministic Scoring Engine) — EXECUTING
 Plan: 1 of 2
 Status: Executing Phase 03
-Last activity: 2026-08-13 — Phase 03 execution started
+Last activity: 2026-08-13 - Completed quick task 260813-pvn: Fix code review findings CR-01, WR-01, WR-04, IN-01, IN-02 from phase 3 review
 
 Progress: [████████░░] 80%
 
@@ -98,6 +98,12 @@ None yet.
 - **[New, 2026-08-13]** Phase 2's context-gathering session (`02-CONTEXT.md`) ran concurrently with this pivot and may have been scoped against the old resolver/registry API surface — worth a quick sanity check before `/gsd-plan-phase 2`.
 - **[New, 2026-08-13]** Phase 3's context/research/discussion-log files (`.planning/phases/03-deterministic-scoring-engine/`) are already committed, even though Phase 2 was not yet complete when they were created (part of the same session that left Phase 2 mid-flight — see reconciliation note above). Not corrupted, just out of order; worth a quick sanity check when Phase 3 planning starts, since it may have been scoped before Phase 2's live adapters (and their axios/split-file shape) existed.
 - **[New, 2026-08-13]** `.planning/config.json` has uncommitted local drift unrelated to Phase 2's code (model_profile downgraded "balanced"→"budget", `workflow.plan_check`/`workflow.verifier`/`plan.pattern_mapper` disabled, `plan.code_review_depth` lowered "standard"→"quick", `plan.ui_review` added). Left uncommitted and un-reviewed here — decide deliberately whether to keep, commit, or revert.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260813-pvn | Fix code review findings CR-01, WR-01, WR-04, IN-01, IN-02 from phase 3 review (CR-02 left as options doc, not fixed) | 2026-08-13 | c310a79 | [260813-pvn-fix-code-review-findings-cr-01-wr-01-wr-](./quick/260813-pvn-fix-code-review-findings-cr-01-wr-01-wr-/) |
 
 ## Deferred Items
 
