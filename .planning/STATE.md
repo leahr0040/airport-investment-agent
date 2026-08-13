@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: live-data-adapters-caching
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-08-13T10:35:38.839Z"
+stopped_at: "Phase 02 plans 01-04 reconciled and committed; 02-05 (isolation test + live smoke) remaining"
+last_updated: "2026-08-13T13:50:00.000Z"
 last_activity: 2026-08-13
-last_activity_desc: Phase 02 execution started
+last_activity_desc: Reconciled a partially-drifted prior session's uncommitted Phase 02 work (02-01 through 02-04) and committed it task-by-task
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 9
   completed_plans: 8
-  percent: 20
+  percent: 89
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 ## Current Position
 
 Phase: 02 (live-data-adapters-caching) — EXECUTING
-Plan: 1 of 5
+Plan: 5 of 5 (02-01 through 02-04 complete; 02-05 in progress)
 Status: Executing Phase 02
-Last activity: 2026-08-13 — Phase 02 execution started
+Last activity: 2026-08-13 — reconciled a partially-drifted prior session's uncommitted work for 02-01 through 02-04
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -81,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 01, architecture pivot, 2026-08-13]: By explicit user direction (24-hour deadline, "aggressively simplify"), deleted `resolve.ts`, `allowlist.ts`, `registry.ts`, `fetchArcGis.ts`, `geometry.ts`, `metroClusters.ts`, `aliases.ts`, `types.ts`, and the test-fixture registry — all built and passing (44/44 tests) at the time of deletion. Replaced with one file, `src/domain/airports/regions.ts`, exporting a hardcoded `Record<string, string[]>` of ~15 region/metro names and `lookupAirports(query): string[]`. Rationale: NLU (what did the analyst mean) moves to the Phase 4 LLM; Phase 1's job shrinks to a convenience lookup for known names.
 - [Phase 01, architecture pivot, 2026-08-13]: Explicitly asked whether SEC-02's allowlist gate should survive the cut — user chose "simple validation that the value looks like we expected, not allowlist" — but that intermediate (format-only) design was itself cut one message later in favor of deleting `allowlist.ts` entirely. Current code performs **no validation at all** before an identifier could reach an outbound call. This contradicts CLAUDE.md's explicit "SEC-02 is not deferrable polish." Flagged in REQUIREMENTS.md; needs a decision before Phase 2 wires any outbound HTTP call.
 - [Phase 01, architecture pivot, 2026-08-13]: DATA-01 (live FAA ArcGIS runway/facility registry — the project's only source for physical-capacity data: runway count/length/parallel-runway separation) was fully built in 01-04, then deleted. No replacement exists. QUERY-04 (Phase 4) explicitly depends on "runway geometry ... cross-referenced with observed delay conditions" — that data source no longer exists anywhere in the codebase. Needs a decision before Phase 3 (scoring) planning: rebuild as a per-request live call, or drop the physical-capacity signal from scope.
+- [Phase 02, reconciliation, 2026-08-13]: A prior session had written plans 02-01 (partially), 02-02, 02-03, and 02-04 to disk without following the executor commit protocol — 02-01's cache.ts existed uncommitted and failed its own tests (lru-cache TTL-expiry bug, fixed by adding `ttlResolution: 0`); 02-03/02-04 had SUMMARY.md files claiming completion with zero commits, an unapproved `axios` dependency never mentioned in any plan, and a file-count deviation (opensky/nasStatus split into 5/2 files instead of the plans' 2 each). Reconciled task-by-task: fixed the cache bug, closed real gaps in the NAS Status adapter (it only read the Airport Closures block; rewritten as a generic walk over every Delay_type block), re-ran the fast-xml-parser Package Legitimacy checkpoint for real (the drift's claimed approval had no record), and committed everything with proper SUMMARY.md files.
+- [Phase 02, developer decision, 2026-08-13]: Explicitly directed to keep `axios` and the split-file adapter structure (opensky.ts/.client.ts/.parser.ts/.aggregator.ts/.types.ts; nasStatus.ts/.client.ts) instead of plans 02-03/02-04's single-file `fetch()`-based spec — "I want to use axios and I want the split files - the code is more clean and clear." Those two plans' literal file-shape acceptance criteria (exact file count, `AbortSignal.timeout` grep) no longer apply; the underlying behavior (3s timeout, no retry, format gate before I/O) is preserved via axios's `timeout` option plus a normalizer that maps axios's `ECONNABORTED` to the `TimeoutError`-named error the shared `toAdapterFailure` helper expects.
 
 ### Pending Todos
 
@@ -94,6 +96,8 @@ None yet.
 - **[New, 2026-08-13]** No airport-identifier validation exists anywhere in the codebase (SEC-02's allowlist was deleted). Before Phase 2 wires any outbound HTTP call keyed by an airport code, decide whether to reintroduce at least format validation.
 - **[New, 2026-08-13]** No live physical-capacity data source exists (DATA-01's FAA ArcGIS registry was deleted). QUERY-04 (Phase 4) is written against runway-separation data that no longer has a source. Needs a decision before Phase 3 planning.
 - **[New, 2026-08-13]** Phase 2's context-gathering session (`02-CONTEXT.md`) ran concurrently with this pivot and may have been scoped against the old resolver/registry API surface — worth a quick sanity check before `/gsd-plan-phase 2`.
+- **[New, 2026-08-13]** Phase 3's context/research/discussion-log files (`.planning/phases/03-deterministic-scoring-engine/`) are already committed, even though Phase 2 was not yet complete when they were created (part of the same session that left Phase 2 mid-flight — see reconciliation note above). Not corrupted, just out of order; worth a quick sanity check when Phase 3 planning starts, since it may have been scoped before Phase 2's live adapters (and their axios/split-file shape) existed.
+- **[New, 2026-08-13]** `.planning/config.json` has uncommitted local drift unrelated to Phase 2's code (model_profile downgraded "balanced"→"budget", `workflow.plan_check`/`workflow.verifier`/`plan.pattern_mapper` disabled, `plan.code_review_depth` lowered "standard"→"quick", `plan.ui_review` added). Left uncommitted and un-reviewed here — decide deliberately whether to keep, commit, or revert.
 
 ## Deferred Items
 
