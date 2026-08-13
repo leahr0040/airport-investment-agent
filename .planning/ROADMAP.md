@@ -80,7 +80,22 @@ Plans:
   3. Repeated requests for the same airport within a source's TTL are served from the `lru-cache` without a duplicate upstream call, and different sources (registry, OpenSky, NAS status) carry different TTLs reflecting their actual volatility.
   4. When one source times out or fails, the KPIs it feeds are marked "unavailable" and the rest of the answer still returns, rather than the whole request failing.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Adapter foundation: Vitest harness that can import `server-only` modules, `lru-cache` TTL wrapper, `AdapterResult<T>` contract, D-08 format gate (wave 1)
+- [ ] 02-02-PLAN.md — Carry ICAO codes as data on every `regions.ts` entry (D-09) and derive them by rule only on the passthrough branch (D-10) (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-03-PLAN.md — OpenSky movements adapter: OAuth2 lazy token refresh, bucketed 24h window, 3s timeout, typed failures (wave 2)
+- [ ] 02-04-PLAN.md — FAA NAS Status adapter: whole-feed XML fetch under one cache key, FAA-LID filtering, `fast-xml-parser` legitimacy checkpoint (wave 2, has checkpoint)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-05-PLAN.md — Cross-adapter failure-isolation proof and opt-in live smoke verification against both real upstreams (wave 3, has checkpoint)
 
 ### Phase 3: Deterministic Scoring Engine
 
@@ -134,7 +149,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation — Configuration, Airport Registry & Resolution | 4/4 | Complete (scope reduced 2026-08-13) | 2026-08-13 |
-| 2. Live Data Adapters & Caching | 0/TBD | Not started | - |
+| 2. Live Data Adapters & Caching | 0/5 | Planned | - |
 | 3. Deterministic Scoring Engine | 0/TBD | Not started | - |
 | 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 0/TBD | Not started | - |
 | 5. Security Hardening, Design Doc & Submission Packaging | 0/TBD | Not started | - |
