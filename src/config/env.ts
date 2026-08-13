@@ -13,6 +13,8 @@ const schema = z.object({
   OPENSKY_CLIENT_ID: z.string(OPENSKY_ID_MSG).trim().min(1, OPENSKY_ID_MSG),
   OPENSKY_CLIENT_SECRET: z.string(OPENSKY_SECRET_MSG).trim().min(1, OPENSKY_SECRET_MSG),
   GOOGLE_GENERATIVE_AI_API_KEY: z.string(GEMINI_KEY_MSG).trim().min(1, GEMINI_KEY_MSG),
+  // Optional: swap models (e.g. gemini-2.5-flash-lite) without touching call sites.
+  GOOGLE_GENERATIVE_AI_MODEL: z.string().trim().min(1).default("gemini-2.5-flash"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"], LOG_LEVEL_MSG).default("info"),
 });
 
