@@ -4,7 +4,9 @@ export const OPENSKY_TTL_MS = 5 * 60 * 1000;
 export const NAS_STATUS_TTL_MS = 3 * 60 * 1000;
 export const OPENSKY_BUCKET_SECONDS = 300;
 
-const cache = new LRUCache<string, any>({
+// lru-cache constrains V to `{}` (excludes null/undefined) - NonNullable<unknown> satisfies that
+// without falling back to `any`; callers still cast on read via withCache<T>'s `as T`.
+const cache = new LRUCache<string, NonNullable<unknown>>({
   max: 2000,
   // lru-cache initializes per-entry TTL tracking only when this is set; every caller overrides it.
   ttl: 1,
@@ -30,7 +32,7 @@ export async function withCache<T>(
 
   misses += 1;
   const value = await fn();
-  cache.set(key, value === undefined ? UNDEFINED_VALUE : value, { ttl: ttlMs });
+  cache.set(key, (value === undefined ? UNDEFINED_VALUE : value) as NonNullable<unknown>, { ttl: ttlMs });
   return value;
 }
 
