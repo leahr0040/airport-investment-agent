@@ -136,4 +136,24 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
     const res = await fetchFaaFacility('KATL');
     expect(res).toMatchObject({ ok: false, reason: expectedReason });
   });
+
+  it('never caches a no_data failure result: two consecutive lookups both hit the network', async () => {
+    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
+    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
+
+    await fetchFaaFacility('KXXX');
+    await fetchFaaFacility('KXXX');
+
+    expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('still caches a genuine ok:true success: two consecutive lookups hit the network only once', async () => {
+    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, facilityFeature()));
+    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, TWO_RUNWAYS));
+
+    await fetchFaaFacility('KATL');
+    await fetchFaaFacility('KATL');
+
+    expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+  });
 });

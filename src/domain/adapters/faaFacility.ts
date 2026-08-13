@@ -1,7 +1,7 @@
 import 'server-only';
 import { withCache, FAA_FACILITY_TTL_MS } from './cache';
 import { faaFacilityClient } from './faaFacility.client';
-import type { AdapterResult } from './types';
+import type { AdapterFailReason, AdapterResult } from './types';
 import { isValidIcao, isValidIata } from './validate';
 import { toAdapterFailure } from './errors';
 
@@ -40,11 +40,13 @@ export async function fetchFaaFacility(icao: string): Promise<AdapterResult<FaaF
     return await withCache<AdapterResult<FaaFacility>>(key, FAA_FACILITY_TTL_MS, async () => {
       // facility rows
       const facilityRows = await faaFacilityClient.fetchFacilityRows(icao);
-      if (!facilityRows || facilityRows.length === 0) return { ok: false, reason: 'no_data' };
+      // Throw (not return) on a cache-body failure: cache.ts's withCache only calls
+      // cache.set after fn() resolves, so a rejection is never pinned for the 24h TTL.
+      if (!facilityRows || facilityRows.length === 0) throw Object.assign(new Error('no_data'), { reason: 'no_data' satisfies AdapterFailReason });
 
       const first = facilityRows[0];
       const rawArpt = typeof first.ARPT_ID === 'string' ? first.ARPT_ID.trim().toUpperCase() : '';
-      if (!isValidIata(rawArpt)) return { ok: false, reason: 'error' };
+      if (!isValidIata(rawArpt)) throw Object.assign(new Error('error'), { reason: 'error' satisfies AdapterFailReason });
 
       const runwayRows = await faaFacilityClient.fetchRunwayRows(rawArpt);
 
