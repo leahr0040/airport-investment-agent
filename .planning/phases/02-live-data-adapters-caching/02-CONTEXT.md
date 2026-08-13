@@ -1,12 +1,15 @@
 # Phase 2: Live Data Adapters & Caching - Context
 
 **Gathered:** 2026-08-13
+**Updated:** 2026-08-13 (Phase 1 architecture pivot sanity check)
 **Status:** Ready for planning
 
 <domain>
 ## Phase Boundary
 
-Every live data source the scoring engine needs (OpenSky movements, FAA NAS delay/closure status) is fetched through its own adapter, cached per-source with a TTL matched to its actual volatility, and fails in isolation — one source timing out or erroring must not take down the rest of the answer. Phase 1's FAA ArcGIS registry (boot-once, no TTL) is out of scope here; this phase is the two *dynamic* sources plus the caching layer itself. Zero UI, zero LLM, zero scoring math in this phase (those are Phase 3/4).
+Every live data source the scoring engine needs (OpenSky movements, FAA NAS delay/closure status) is fetched through its own adapter, cached per-source with a TTL matched to its actual volatility, and fails in isolation — one source timing out or erroring must not take down the rest of the answer. Zero UI, zero LLM, zero scoring math in this phase (those are Phase 3/4).
+
+**Post-gathering update:** Phase 1 was retroactively simplified (commit `d96b2e2`, 2026-08-13) — the FAA ArcGIS registry, the `resolve.ts`/`registry.ts`/`allowlist.ts` resolution stack, and the `AirportRef` type were all deleted and replaced with a hardcoded `regions.ts` name→code lookup. That registry was never in this phase's scope, but two things it used to provide now have no source and had to be re-decided here: airport-identifier validation before an outbound call (SEC-02) and the IATA→ICAO mapping OpenSky needs. See D-08, D-09, D-10 below.
 
 </domain>
 
@@ -28,10 +31,18 @@ Every live data source the scoring engine needs (OpenSky movements, FAA NAS dela
 - **D-06:** On any adapter failure or timeout, hard-fail that source's data to `"unavailable"` immediately — no stale-cache-serve fallback, even if a stale cached value exists. This overrides Claude's ARCHITECTURE.md-sourced recommendation (serve stale value with a `stale: true` flag); the user chose the simpler hard-fail contract instead. Downstream (Phase 3's metric layer) must treat "unavailable" as the only failure state an adapter can report — there is no "stale" state to design for.
 - **D-07:** Timeout is 3 seconds per adapter call, with no retry. Overrides ARCHITECTURE.md's suggested ~4–5s + one retry. Worst-case added latency per failing source is bounded to 3s, not ~10s.
 
+### Airport-identifier validation (SEC-02 gap, re-opened by the Phase 1 pivot)
+- **D-08:** Phase 1's allowlist (`allowlist.ts`) was deleted along with the rest of the resolver stack — nothing in the codebase currently validates an airport identifier's shape before it could reach an outbound URL, contradicting CLAUDE.md's "SEC-02 is not deferrable polish." Phase 2 closes this at the adapter boundary: each adapter format-checks its input (regex shape check — 3-letter IATA and/or 4-letter ICAO as applicable to that adapter) before constructing any outbound request, and rejects anything that doesn't match rather than reintroducing a separate allowlist module. This is the SSRF-prevention gate CLAUDE.md requires; it now lives in the adapter layer instead of a Phase 1 resolution layer.
+
+### IATA→ICAO mapping (source lost when Phase 1's FAA registry was deleted)
+- **D-09:** OpenSky requires ICAO codes (`KATL`), but `regions.ts`'s `REGION_LOOKUP` only carries IATA codes, and the FAA ArcGIS registry that used to supply the `ARPT_ID`↔`ICAO_ID` join no longer exists in the codebase. Fix at the data level, not with a derivation rule: change `REGION_LOOKUP`'s value type from `readonly string[]` to `readonly {iata: string; icao: string}[]`, so every hardcoded region/metro entry carries its correct ICAO code as data. This is a small edit to Phase 1's `regions.ts` made as part of this phase's plan, not a new Phase 1 discussion — the ~40 codes already in the table get their ICAO filled in once.
+- **D-10:** `lookupAirports()`'s passthrough branch (a bare code the analyst types that isn't one of the hardcoded table entries) has no table row to pull an ICAO from. For that branch only, derive ICAO via the K+IATA prefix rule with explicit Alaska/Hawaii exceptions hardcoded alongside it (`ANC`→`PANC`, `HNL`→`PHNL`, per CLAUDE.md's documented exceptions) — never applied to table entries, which already carry the real value from D-09.
+
 ### Claude's Discretion
 - Exact cache key format per source (e.g. `opensky:{icao}:{window}`, `nas:{icao}`) — implementation detail, not surfaced as a user decision.
 - Whether OpenSky's 24-hour window requires multiple stitched API calls or fits in one, based on the endpoint's actual documented time-span cap — verify during research.
-- `AdapterResult<T>` exact TypeScript shape (`ok`/`fail` discriminated union fields) — follows the pattern already sketched in ARCHITECTURE.md Pattern 2, adjusted to drop the "stale" branch per D-06.
+- `AdapterResult<T>` exact TypeScript shape (`ok`/`fail` discriminated union fields) — follows the pattern already sketched in ARCHITECTURE.md Pattern 2, adjusted to drop the "stale" branch per D-06 and to accept a `{iata, icao}` pair (or format-checked code) instead of the now-deleted `AirportRef` type per D-08/D-09.
+- Exact regex/shape used for the D-08 format check (e.g. `^[A-Z]{3}$` for IATA, `^[A-Z]{4}$` for ICAO) — implementation detail for the researcher/planner, not a user decision.
 
 </decisions>
 
@@ -46,12 +57,13 @@ Every live data source the scoring engine needs (OpenSky movements, FAA NAS dela
 - `.planning/ROADMAP.md` §"Phase 2: Live Data Adapters & Caching" — goal, success criteria, dependencies
 
 ### Data source & architecture research
-- `.claude/CLAUDE.md` §"Q1 — Live Public Aviation APIs" — OpenSky OAuth2 client-credentials flow, 30-minute token expiry, `/flights/departure`/`/flights/arrival` field behavior (nullable `estDepartureAirport`/`estArrivalAirport`), FAA NAS Status schema (`nasstatus.faa.gov`, keyless, XML)
-- `.planning/research/ARCHITECTURE.md` §"Pattern 2: Adapter/port shape per upstream API" — `AdapterResult<T>` shape, cache-aside wrapper keyed by `${adapterName}:${icao}:${timeBucket}`; §"Caching strategy" — the TTL defaults accepted in D-03 (source of the 5-10min/2-5min numbers, now confirmed rather than superseded); note its stale-serve-on-failure suggestion is explicitly **overridden** by D-06
+- `.claude/CLAUDE.md` §"Q1 — Live Public Aviation APIs" — OpenSky OAuth2 client-credentials flow, 30-minute token expiry, `/flights/departure`/`/flights/arrival` field behavior (nullable `estDepartureAirport`/`estArrivalAirport`), FAA NAS Status schema (`nasstatus.faa.gov`, keyless, XML), and the documented IATA/ICAO Alaska/Hawaii exceptions used in D-10
+- `.planning/research/ARCHITECTURE.md` §"Pattern 2: Adapter/port shape per upstream API" — `AdapterResult<T>` shape, cache-aside wrapper keyed by `${adapterName}:${icao}:${timeBucket}`; §"Caching strategy" — the TTL defaults accepted in D-03 (source of the 5-10min/2-5min numbers, now confirmed rather than superseded). Two of this doc's assumptions are now **stale and superseded**: its stale-serve-on-failure suggestion is overridden by D-06, and every place it types adapter input as `AirportRef` (§"Pattern 1", the SSRF section) refers to a type deleted in the Phase 1 pivot — adapters now accept a `{iata, icao}` pair per D-08/D-09/D-10 instead.
 
 ### Prior phase context
-- `.planning/phases/01-foundation-configuration-airport-registry-resolution/01-CONTEXT.md` — D-02 (FAA ArcGIS is the sole registry source, `ARPT_ID` used as IATA field) and the registry's boot-once, no-TTL caching pattern this phase's adapters must NOT replicate for dynamic sources
-- `.planning/phases/01-foundation-configuration-airport-registry-resolution/01-04-PLAN.md` — the `AirportRef`/`Registry` types this phase's adapters must accept as their only valid input (the SSRF allowlist established in Phase 1)
+- `.planning/phases/01-foundation-configuration-airport-registry-resolution/01-CONTEXT.md` — historical only; its D-02 (FAA ArcGIS registry, `ARPT_ID`/`ICAO_ID` join) describes code that was deleted in the 2026-08-13 architecture pivot and no longer exists
+- `src/domain/airports/regions.ts` — the actual current Phase 1 output: hardcoded `REGION_LOOKUP` name→codes table and `lookupAirports()`. This phase's plan edits this file per D-09 (add `icao` alongside `iata` per entry) and D-10 (K-prefix fallback for the passthrough branch)
+- `.planning/ROADMAP.md` §"Phase 1" architecture-pivot note and `.planning/REQUIREMENTS.md` SEC-02/DATA-01 annotations — record what Phase 1 traded away (registry coverage, the allowlist, physical-capacity data) and flag DATA-01's replacement as a Phase 3 decision, not this phase's
 
 </canonical_refs>
 
@@ -60,17 +72,17 @@ Every live data source the scoring engine needs (OpenSky movements, FAA NAS dela
 
 ### Reusable Assets
 - `src/config/env.ts` — validated env module already exposes `OPENSKY_CLIENT_ID`/`OPENSKY_CLIENT_SECRET`; the OpenSky adapter's token-fetch call reads these via `getEnv()`, not `process.env` directly.
-- `src/domain/airports/types.ts` — `AirportRef` is the only type this phase's adapters should accept as input (never a raw string), matching Phase 1's SSRF allowlist contract.
-- `src/domain/airports/fetchArcGis.ts` (from Phase 1, plan 01-04) — establishes the project's pattern for typed upstream-fetch errors (`ArcGisQueryError` with a named layer/status) and `AbortSignal`-based timeout plumbing; the OpenSky/FAA-NAS adapters should follow the same shape for their own typed errors, even though they're a different upstream.
+- `src/domain/airports/regions.ts` — the current Phase 1 output (`AirportRef`/`types.ts`/`fetchArcGis.ts` no longer exist, deleted in the 2026-08-13 pivot). `lookupAirports()` returns codes for a name/region query; per D-09/D-10 this phase edits it so each result carries `{iata, icao}` instead of a bare IATA string. Adapters accept that shape (format-checked per D-08) as their only valid input — the equivalent of the old `AirportRef` contract, just sourced differently.
 
 ### Established Patterns
 - Pure-core discipline continues: adapters are the I/O boundary; nothing above them (metrics, scoring) does network calls. `AdapterResult<T>` is the seam.
 - `server-only` import guard (used in `src/config/env.ts`) should also guard the new adapter modules, since they hold OpenSky credentials.
 - No `lru-cache` dependency exists yet in `package.json` — this phase is what introduces it.
+- No established pattern yet for typed upstream-fetch errors or `AbortSignal`-based timeout plumbing — Phase 1's `fetchArcGis.ts` used to be the reference example but was deleted; this phase's OpenSky/FAA-NAS adapters are establishing that pattern fresh, not following a precedent.
 
 ### Integration Points
 - Adapters live under `src/domain/adapters/` per ARCHITECTURE.md's proposed layout (`opensky.ts`, `nasStatus.ts`, `cache.ts`, `types.ts`) — no such directory exists yet.
-- `src/instrumentation.ts` currently awaits `initRegistry()` at boot (Phase 1); this phase's adapters are NOT boot-initialized — they're called per-request, cache-aside, unlike the registry singleton.
+- `src/instrumentation.ts` no longer calls `initRegistry()` at boot (that call was removed along with the registry in the Phase 1 pivot) — there is currently nothing airport-related to await at boot. This phase's adapters are NOT boot-initialized regardless; they're called per-request, cache-aside.
 
 </code_context>
 
@@ -84,7 +96,9 @@ No UI or exact message copy involved — this phase is server-side data plumbing
 <deferred>
 ## Deferred Ideas
 
-None — discussion stayed within Phase 2 scope. No todos existed to fold or review (`todo.match-phase` returned zero matches).
+- **Physical-capacity data source (DATA-01)** — the FAA ArcGIS runway/facility registry that used to supply runway count/length/parallel-separation was deleted in the Phase 1 pivot; no replacement exists. This is a Phase 3 (scoring engine) decision — rebuild as a per-request live call there, or drop the physical-capacity signal from scope — not something this phase's OpenSky/NAS adapters need to solve. Flagged here so it isn't lost; tracked in `.planning/STATE.md`'s pending-todos.
+
+No other scope creep — discussion stayed within Phase 2 boundaries otherwise. No todos existed to fold or review (`todo.match-phase` returned zero matches).
 
 </deferred>
 

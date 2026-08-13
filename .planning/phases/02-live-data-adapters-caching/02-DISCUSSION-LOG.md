@@ -77,8 +77,51 @@ Follow-up: timeout and retry policy.
 
 - Exact cache key format per source (e.g. `opensky:{icao}:{window}`, `nas:{icao}`).
 - Whether OpenSky's 24-hour window requires multiple stitched API calls or fits in one call, based on the endpoint's actual documented time-span cap — verify during research.
-- `AdapterResult<T>` exact TypeScript shape, following ARCHITECTURE.md Pattern 2 adjusted to drop the "stale" branch.
+- `AdapterResult<T>` exact TypeScript shape, following ARCHITECTURE.md Pattern 2 adjusted to drop the "stale" branch and accept a `{iata, icao}` pair instead of the deleted `AirportRef` type.
+- Exact regex/shape for the SEC-02 format check (e.g. `^[A-Z]{3}$` IATA, `^[A-Z]{4}$` ICAO).
 
 ## Deferred Ideas
 
-None — discussion stayed within Phase 2 scope.
+- Physical-capacity data source (DATA-01) — no replacement exists for the deleted FAA ArcGIS registry. Belongs to Phase 3 (scoring engine), already tracked in STATE.md's pending todos.
+
+---
+
+## Update — 2026-08-13 (Phase 1 architecture pivot sanity check)
+
+**Trigger:** Between this discussion and now, Phase 1 was retroactively simplified (commit `d96b2e2`): the FAA ArcGIS registry, `resolve.ts`/`registry.ts`/`allowlist.ts`, and the `AirportRef` type were deleted and replaced with a hardcoded `regions.ts` lookup. User asked to check whether Phase 2's context needed updating as a result.
+
+**Areas discussed:** SEC-02 validation gap, IATA→ICAO mapping, passthrough-code fallback.
+
+### SEC-02 validation gap
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Format-check in adapter | Regex shape check (IATA/ICAO pattern) before any outbound URL is built. | ✓ |
+| Rebuild a minimal allowlist | Static Set of known-valid codes, membership-checked. | |
+| Accept the gap for now | Defer validation, revisit in Phase 5. | |
+
+**User's choice:** Format-check in adapter (D-08).
+
+### IATA→ICAO mapping
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Hardcoded K-prefix derivation rule | 'K' + IATA, with AK/HI exceptions, applied everywhere. | |
+| Static IATA↔ICAO lookup table | Explicit data, no derivation rule. | |
+| User's own proposal | Change `REGION_LOOKUP`'s value type to carry `{iata, icao}` pairs per entry, so the table itself is the source of truth. | ✓ |
+
+**User's choice:** Extend `regions.ts`'s table shape to `{iata, icao}[]` (D-09).
+**Notes:** User proposed this directly rather than picking from the offered options; Claude confirmed it was sound (single source of truth, no exception list to maintain) and flagged the remaining gap — the passthrough branch for codes not in the table has no row to pull an ICAO from.
+
+### Passthrough-code fallback
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| K-prefix rule as fallback only | Table entries use D-09's real data; only the passthrough branch (code not in the table) derives ICAO via K+IATA with AK/HI exceptions. | ✓ |
+| Reject passthrough entirely | Bare codes not in the table return unresolved rather than guessing. | |
+
+**User's choice:** K-prefix rule as fallback only (D-10).
+
+### Deferred Ideas (this update)
+
+None — both decisions stayed within Phase 2's boundary (validating/deriving identifiers before adapters use them), even though D-09's edit touches a Phase 1 file.
