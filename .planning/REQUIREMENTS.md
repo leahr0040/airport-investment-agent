@@ -17,10 +17,10 @@
 ### Live Data Sources
 
 - [ ] **DATA-01**: System fetches US airport facility and runway data from the FAA ArcGIS API at startup and caches it as the canonical airport registry, retaining per-runway geometry (count, length, and parallel-runway separation) since separation drives all-weather capacity — **built in Phase 1 plan 01-04 (`fetchArcGis.ts`/`geometry.ts`/`registry.ts`), then deleted 2026-08-13 in the architecture pivot below. No physical-capacity data source exists anywhere in the codebase right now; needs a decision (rebuild per-request in Phase 2/3, or drop the physical-capacity signal from scoring) before Phase 3 planning.**
-- [ ] **DATA-02**: System fetches per-airport departures and arrivals from OpenSky over an explicit, stated time window using OAuth2 client credentials
-- [ ] **DATA-03**: System fetches current delay and closure status from the FAA NAS Status API
-- [ ] **DATA-04**: All upstream responses are cached via `lru-cache` with a TTL chosen per source, reflecting each source's actual volatility
-- [ ] **DATA-05**: One failing or timing-out upstream source degrades its own KPIs to "unavailable" without failing the whole answer
+- [x] **DATA-02**: System fetches per-airport departures and arrivals from OpenSky over an explicit, stated time window using OAuth2 client credentials
+- [x] **DATA-03**: System fetches current delay and closure status from the FAA NAS Status API
+- [x] **DATA-04**: All upstream responses are cached via `lru-cache` with a TTL chosen per source, reflecting each source's actual volatility
+- [x] **DATA-05**: One failing or timing-out upstream source degrades its own KPIs to "unavailable" without failing the whole answer
 
 ### Airport Resolution
 
