@@ -105,7 +105,7 @@ GET /services/arcgis/rest/services/FAA_ADIP_2024/FeatureServer/0/query?
 
 **Key design decisions:**
 
-1. **Query by ICAO code, not FAA LID:** ICAO (`KATL`) is already carried on every `AirportCodes` entry per Phase 2 D-09; ICAO queries are unambiguous. FAA LID (`ATL`) exists as a field but requires derivation/correction handling (e.g., West Palm Beach's 2026-08-18 IATA rename PBI→DJT that the ArcGIS service may not have updated immediately). Query by ICAO first; if that returns no results, retry with FAA LID derivation.
+1. **Query by ICAO code, not FAA LID:** ICAO (`KATL`) is already carried on every `AirportCodes` entry per Phase 2 D-09; ICAO queries are unambiguous. FAA LID (`ATL`) exists as a field but requires derivation/correction handling in edge cases — FAA LID and IATA code diverge for a handful of airports, so a naive "strip the K prefix" derivation is not universally correct. Query by ICAO first; if that returns no results, retry with FAA LID derivation.
 
 2. **Outfields selection:** Request only the fields needed for scoring (runway geometry, facility type, coordinates) plus one redundancy field (ARPT_ID) to diagnose potential ICAO/LID mismatches. Avoid loading unused fields (pavement strength, tower type, fuel types) to minimize payload/latency.
 
