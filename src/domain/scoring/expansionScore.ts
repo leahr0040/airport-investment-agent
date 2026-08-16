@@ -79,80 +79,70 @@ export function minMaxNormalize(value: number, dataset: number[]): number {
   return ((value - min) / (max - min)) * 100;
 }
 
+function resolveVolume(input: ScoringInput): VolumeKpi | null {
+  return input.movements.ok ? computeVolumeKpi(input.movements.data) : null;
+}
+
+function resolveHeadroom(input: ScoringInput): HeadroomKpi | null {
+  if (!input.movements.ok || !input.facility.ok || input.facility.data.runways.length === 0) return null;
+  return computeHeadroomKpi(input.movements.data, input.facility.data);
+}
+
+function resolveDelay(input: ScoringInput): DelayKpi | null {
+  return input.nasStatus.ok ? computeDelayKpi(input.nasStatus.data) : null;
+}
+
+function volumeReason(input: ScoringInput): AdapterFailReason {
+  return input.movements.ok ? 'error' : input.movements.reason;
+}
+
+function headroomReason(input: ScoringInput): AdapterFailReason {
+  if (!input.movements.ok) return input.movements.reason;
+  if (!input.facility.ok) return input.facility.reason;
+  return 'no_data';
+}
+
+function delayReason(input: ScoringInput): AdapterFailReason {
+  return input.nasStatus.ok ? 'error' : input.nasStatus.reason;
+}
+
+function buildComponent<K>(
+  kpi: K | null,
+  metric: (k: K) => number,
+  reason: AdapterFailReason,
+  dataset: number[],
+  weight: number
+): ComponentResult<K> {
+  if (kpi === null) {
+    return { available: false, kpi: null, normalized: null, contribution: null, reason };
+  }
+  const normalized = minMaxNormalize(metric(kpi), dataset);
+  return { available: true, kpi, normalized, contribution: normalized * weight };
+}
+
 export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
   // Pure function: no side effects, deterministic output.
 
-  // Build datasets per component from available inputs
-  const volumeDataset: number[] = [];
-  const headroomDataset: number[] = [];
-  const delayDataset: number[] = [];
+  const resolved = inputs.map((input) => ({
+    input,
+    vol: resolveVolume(input),
+    head: resolveHeadroom(input),
+    delay: resolveDelay(input),
+  }));
 
-  // temporary store KPIs per input
-  const tmp = inputs.map((input) => {
-    const vol = input.movements.ok ? computeVolumeKpi(input.movements.data) : null;
-    const head =
-      input.movements.ok && input.facility.ok && input.facility.data.runways.length > 0
-        ? computeHeadroomKpi(input.movements.data, input.facility.data)
-        : null;
-    const delay = input.nasStatus.ok ? computeDelayKpi(input.nasStatus.data) : null;
-    if (vol) volumeDataset.push(vol.passengerMovements);
-    if (head) headroomDataset.push(head.movementsPerRunway);
-    if (delay) delayDataset.push(delay.eventCount);
-    return { input, vol, head, delay } as const;
-  });
+  const volumeDataset = resolved.filter((k) => k.vol).map((k) => k.vol!.passengerMovements);
+  const headroomDataset = resolved.filter((k) => k.head).map((k) => k.head!.movementsPerRunway);
+  const delayDataset = resolved.filter((k) => k.delay).map((k) => k.delay!.eventCount);
 
-  // helper to safely extract adapter failure reasons
-  function reasonOf<T>(r: AdapterResult<T>): AdapterFailReason | null {
-    return r.ok ? null : r.reason;
-  }
-
-  return tmp.map(({ input, vol, head, delay }) => {
-    const volumeAvailable = vol !== null;
-    const headroomAvailable = head !== null;
-    const delayAvailable = delay !== null;
-
-    const availableCount = [volumeAvailable, headroomAvailable, delayAvailable].filter(Boolean).length;
+  return resolved.map(({ input, vol, head, delay }) => {
+    const availableCount = [vol, head, delay].filter((k) => k !== null).length;
     const weightPerComponent = availableCount > 0 ? 1 / availableCount : 0;
 
-    const volumeComponent: ComponentResult<VolumeKpi> = volumeAvailable
-      ? {
-          available: true,
-          kpi: vol!,
-          normalized: minMaxNormalize(vol!.passengerMovements, volumeDataset),
-          contribution: 0, // set below
-        }
-      : { available: false, kpi: null, normalized: null, contribution: null, reason: reasonOf(input.movements) ?? 'error' };
-
-    const headroomComponent: ComponentResult<HeadroomKpi> = headroomAvailable
-      ? {
-          available: true,
-          kpi: head!,
-          normalized: minMaxNormalize(head!.movementsPerRunway, headroomDataset),
-          contribution: 0,
-        }
-      : {
-          available: false,
-          kpi: null,
-          normalized: null,
-          contribution: null,
-          reason:
-            reasonOf(input.movements) ??
-            reasonOf(input.facility) ??
-            (input.facility.ok && input.facility.data.runways.length === 0 ? 'no_data' : 'error'),
-        };
-
-    const delayComponent: ComponentResult<DelayKpi> = delayAvailable
-      ? { available: true, kpi: delay!, normalized: minMaxNormalize(delay!.eventCount, delayDataset), contribution: 0 }
-      : { available: false, kpi: null, normalized: null, contribution: null, reason: reasonOf(input.nasStatus) ?? 'error' };
-
-    // compute contributions
-    if (volumeComponent.available) volumeComponent.contribution = volumeComponent.normalized * weightPerComponent;
-    if (headroomComponent.available) headroomComponent.contribution = headroomComponent.normalized * weightPerComponent;
-    if (delayComponent.available) delayComponent.contribution = delayComponent.normalized * weightPerComponent;
+    const volumeComponent = buildComponent(vol, (k) => k.passengerMovements, volumeReason(input), volumeDataset, weightPerComponent);
+    const headroomComponent = buildComponent(head, (k) => k.movementsPerRunway, headroomReason(input), headroomDataset, weightPerComponent);
+    const delayComponent = buildComponent(delay, (k) => k.eventCount, delayReason(input), delayDataset, weightPerComponent);
 
     const score = (volumeComponent.contribution ?? 0) + (headroomComponent.contribution ?? 0) + (delayComponent.contribution ?? 0);
-
-    const coverage = `${availableCount} of 3 components available`;
 
     const components: ScoringComponentBreakdown = {
       volume: volumeComponent,
@@ -160,7 +150,7 @@ export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
       delayFrequency: delayComponent,
       weightPerComponent,
       availableComponentCount: availableCount,
-      coverage,
+      coverage: `${availableCount} of 3 components available`,
     };
 
     return { icao: input.icao, score, components };
