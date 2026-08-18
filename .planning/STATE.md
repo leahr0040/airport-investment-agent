@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 Phase: 03 (Deterministic Scoring Engine) — EXECUTING
 Plan: 1 of 2
 Status: Executing Phase 03
-Last activity: 2026-08-16 - Completed quick task 260816-itv: Simplify scoreAirports component computation
+Last activity: 2026-08-18 - Completed quick task 260818-fr0: Implement session-scoped conversation memory for the chat agent
 
 Progress: [████████░░] 80%
 
@@ -105,6 +105,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260813-pvn | Fix code review findings CR-01, WR-01, WR-04, IN-01, IN-02 from phase 3 review (CR-02 left as options doc, not fixed) | 2026-08-13 | c310a79 | [260813-pvn-fix-code-review-findings-cr-01-wr-01-wr-](./quick/260813-pvn-fix-code-review-findings-cr-01-wr-01-wr-/) |
 | 260816-itv | Simplify scoreAirports component computation (resolver/reason/buildComponent helpers, no behavior change) | 2026-08-16 | 5368a96 | [260816-itv-simplify-scoreairports-component-computa](./quick/260816-itv-simplify-scoreairports-component-computa/) |
+| 260818-fr0 | Implement session-scoped conversation memory for the chat agent | 2026-08-18 | b74d2cc | [260818-fr0-implement-session-scoped-conversation-me](./quick/260818-fr0-implement-session-scoped-conversation-me/) |
 
 ## Deferred Items
 
