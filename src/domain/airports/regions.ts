@@ -7,6 +7,8 @@
  * are the documented exceptions and carry their P-prefixed ICAOs in the table.
  */
 
+import { isValidIcao, isValidIata } from '@/domain/adapters/validate';
+
 export type AirportCodes = { readonly iata: string; readonly icao: string };
 
 const REGION_LOOKUP: Readonly<Record<string, readonly AirportCodes[]>> = {
@@ -147,15 +149,17 @@ export function lookupAirports(query: string): AirportCodes[] {
 
   const norm = query.trim().toUpperCase();
   if (norm.length === 4) {
+    if (!isValidIcao(norm)) return [];
     return [{ iata: norm.slice(1), icao: norm }];
   }
 
   if (norm.length === 3) {
+    if (!isValidIata(norm)) return [];
     // Two exceptions use P-prefixed ICAO codes instead of K-prefixed.
     const exceptions: Record<string, string> = { ANC: 'PANC', HNL: 'PHNL' };
     const icao = exceptions[norm] ?? `K${norm}`;
     return [{ iata: norm, icao }];
   }
 
-  return [{ iata: norm, icao: norm }];
+  return [];
 }

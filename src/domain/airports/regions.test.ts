@@ -54,4 +54,12 @@ describe('lookupAirports', () => {
       }
     }
   });
+
+  it('fails closed on empty, whitespace-only, malformed, or wrong-length input', () => {
+    expect(lookupAirports('')).toEqual([]);
+    expect(lookupAirports('   ')).toEqual([]);
+    expect(lookupAirports('K$T!')).toEqual([]);
+    expect(lookupAirports('AB')).toEqual([]);
+    expect(lookupAirports('ABCDE')).toEqual([]);
+  });
 });
