@@ -6,14 +6,14 @@ current_phase: 03
 current_phase_name: Deterministic Scoring Engine
 status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-08-13T11:25:23.155Z"
-last_activity: 2026-08-13
-last_activity_desc: Phase 03 execution started
+last_updated: "2026-08-18T09:22:12.143Z"
+last_activity: 2026-08-18
+last_activity_desc: "Completed quick task 260818-fr0: Implement session-scoped conversation memory for the chat agent"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 11
-  completed_plans: 9
+  total_plans: 12
+  completed_plans: 10
   percent: 40
 ---
 
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 Phase: 03 (Deterministic Scoring Engine) — EXECUTING
 Plan: 1 of 2
 Status: Executing Phase 03
-Last activity: 2026-08-18 - Completed quick task 260818-fr0: Implement session-scoped conversation memory for the chat agent
+Last activity: 2026-08-18 - Completed quick task 260818-gzv: Fix CR-01 lookupAirports passthrough validation gap
 
 Progress: [████████░░] 80%
 
@@ -82,6 +82,7 @@ Recent decisions affecting current work:
 - [Phase 01, architecture pivot, 2026-08-13]: Explicitly asked whether SEC-02's allowlist gate should survive the cut — user chose "simple validation that the value looks like we expected, not allowlist" — but that intermediate (format-only) design was itself cut one message later in favor of deleting `allowlist.ts` entirely. Current code performs **no validation at all** before an identifier could reach an outbound call. This contradicts CLAUDE.md's explicit "SEC-02 is not deferrable polish." Flagged in REQUIREMENTS.md; needs a decision before Phase 2 wires any outbound HTTP call.
 - [Phase 01, architecture pivot, 2026-08-13]: DATA-01 (live FAA ArcGIS runway/facility registry — the project's only source for physical-capacity data: runway count/length/parallel-runway separation) was fully built in 01-04, then deleted. No replacement exists. QUERY-04 (Phase 4) explicitly depends on "runway geometry ... cross-referenced with observed delay conditions" — that data source no longer exists anywhere in the codebase. Needs a decision before Phase 3 (scoring) planning: rebuild as a per-request live call, or drop the physical-capacity signal from scope.
 - [Phase 02, reconciliation, 2026-08-13]: A prior session had written plans 02-01 (partially), 02-02, 02-03, and 02-04 to disk without following the executor commit protocol — 02-01's cache.ts existed uncommitted and failed its own tests (lru-cache TTL-expiry bug, fixed by adding `ttlResolution: 0`); 02-03/02-04 had SUMMARY.md files claiming completion with zero commits, an unapproved `axios` dependency never mentioned in any plan, and a file-count deviation (opensky/nasStatus split into 5/2 files instead of the plans' 2 each). Reconciled task-by-task: fixed the cache bug, closed real gaps in the NAS Status adapter (it only read the Airport Closures block; rewritten as a generic walk over every Delay_type block), re-ran the fast-xml-parser Package Legitimacy checkpoint for real (the drift's claimed approval had no record), and committed everything with proper SUMMARY.md files.
+- [Quick 260818-gzv]: `lookupAirports`'s passthrough branch now imports `isValidIcao`/`isValidIata` from `src/domain/adapters/validate.ts` instead of relying on length-only checks, so malformed or empty input returns `[]` instead of a fabricated `{iata, icao}` pair — closes CR-01 from `01-REVIEW.md`.
 - [Phase 02, developer decision, 2026-08-13]: Explicitly directed to keep `axios` and the split-file adapter structure (opensky.ts/.client.ts/.parser.ts/.aggregator.ts/.types.ts; nasStatus.ts/.client.ts) instead of plans 02-03/02-04's single-file `fetch()`-based spec — "I want to use axios and I want the split files - the code is more clean and clear." Those two plans' literal file-shape acceptance criteria (exact file count, `AbortSignal.timeout` grep) no longer apply; the underlying behavior (3s timeout, no retry, format gate before I/O) is preserved via axios's `timeout` option plus a normalizer that maps axios's `ECONNABORTED` to the `TimeoutError`-named error the shared `toAdapterFailure` helper expects.
 
 ### Pending Todos
@@ -106,6 +107,7 @@ None yet.
 | 260813-pvn | Fix code review findings CR-01, WR-01, WR-04, IN-01, IN-02 from phase 3 review (CR-02 left as options doc, not fixed) | 2026-08-13 | c310a79 | [260813-pvn-fix-code-review-findings-cr-01-wr-01-wr-](./quick/260813-pvn-fix-code-review-findings-cr-01-wr-01-wr-/) |
 | 260816-itv | Simplify scoreAirports component computation (resolver/reason/buildComponent helpers, no behavior change) | 2026-08-16 | 5368a96 | [260816-itv-simplify-scoreairports-component-computa](./quick/260816-itv-simplify-scoreairports-component-computa/) |
 | 260818-fr0 | Implement session-scoped conversation memory for the chat agent | 2026-08-18 | b74d2cc | [260818-fr0-implement-session-scoped-conversation-me](./quick/260818-fr0-implement-session-scoped-conversation-me/) |
+| 260818-gzv | Fix CR-01 from 01-REVIEW.md: lookupAirports passthrough branch now fails closed on empty/malformed input instead of fabricating a fake pair | 2026-08-18 | 1908486 | [260818-gzv-fix-cr-01-from-01-review-md-lookupairpor](./quick/260818-gzv-fix-cr-01-from-01-review-md-lookupairpor/) |
 
 ## Deferred Items
 
@@ -120,6 +122,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-13T10:35:38.796Z
+Last session: 2026-08-18T09:22:12.131Z
 Stopped at: Phase 3 context gathered
 Resume file: .planning/phases/03-deterministic-scoring-engine/03-CONTEXT.md
