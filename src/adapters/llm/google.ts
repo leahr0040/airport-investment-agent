@@ -1,45 +1,61 @@
-import { z } from 'zod';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, FunctionCallingConfigMode, type Chat } from '@google/genai';
 import { getEnv } from '@/config/env';
+import { TOOL_DECLARATIONS, TOOL_HANDLERS, type ToolName } from '@/domain/agent/tools';
+import { getOrCreateChat } from './sessionStore';
 
-const IntentSchema = z.object({
-  intent: z.enum(['compare', 'rank', 'describe', 'unknown']),
-  airports: z.array(z.string()).optional(),
-  timeWindow: z
-    .object({ begin: z.string().optional(), end: z.string().optional() })
-    .optional(),
-});
+// Caps Gemini round-trips per user query - a multi-tool chain (resolve_region then
+// score_airports) normally finishes in 2-3 rounds; this is a runaway-cost backstop.
+const MAX_TOOL_ROUNDS = 4;
 
-export type IntentPayload = z.infer<typeof IntentSchema>;
+const SYSTEM_PROMPT =
+  'You are an airport investment analyst assistant. For any question about specific airports or US regions, use the provided tools to resolve airport codes and compute scores - never invent scores, KPI numbers, or airport data yourself; only state numbers that came from a tool result. If the question does not name or imply any airport or US region, answer directly without calling any tool.';
 
-function client(): GoogleGenAI {
-  return new GoogleGenAI({ apiKey: getEnv().GOOGLE_GENERATIVE_AI_API_KEY });
+// Everything below is constructed once per server instance, not per request (see
+// instrumentation.ts) - these are shared, built-once config values (client, model, tools),
+// while session-scoped conversation continuity lives in sessionStore.ts, keyed by sessionId.
+const geminiClient = new GoogleGenAI({ apiKey: getEnv().GOOGLE_GENERATIVE_AI_API_KEY });
+const AGENT_MODEL = getEnv().GOOGLE_GENERATIVE_AI_MODEL;
+const AGENT_TOOLS = [{ functionDeclarations: TOOL_DECLARATIONS as never }];
+const TOOL_CALLING_CONFIG = { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } };
+
+function isToolName(name: string | undefined): name is ToolName {
+  return name === 'resolve_region' || name === 'score_airports';
 }
 
-export async function parseIntentWithLLM(query: string): Promise<IntentPayload> {
-  const prompt = `Extract the user's intent and a list of airport identifiers (4-letter ICAO codes) from the query. Respond with JSON only.\n\nUser query: "${query}"`;
-
-  const response = await client().models.generateContent({
-    model: getEnv().GOOGLE_GENERATIVE_AI_MODEL,
-    contents: prompt,
-    config: {
-      responseMimeType: 'application/json',
-      responseJsonSchema: z.toJSONSchema(IntentSchema),
-    },
+function createChat(): Chat {
+  return geminiClient.chats.create({
+    model: AGENT_MODEL,
+    config: { systemInstruction: SYSTEM_PROMPT, tools: AGENT_TOOLS, toolConfig: TOOL_CALLING_CONFIG },
   });
-
-  // Re-validated with the same schema the model was constrained to, not trusted as-is:
-  // Gemini's JSON Schema subset can't express every zod constraint (e.g. enum values).
-  return IntentSchema.parse(JSON.parse(response.text ?? '{}'));
 }
 
-export async function narrateAnswer(structuredResult: unknown): Promise<string> {
-  const prompt = `Given the structured result below, produce a concise narrated answer for an analyst. Include numeric values from the structured data and reference the ICAO codes.\n\nStructured:\n${JSON.stringify(structuredResult, null, 2)}`;
+// Chat's own history capture replaces the manual contents array because it already
+// preserves whatever per-turn state Gemini requires across tool-call rounds, verified
+// live in live.smoke.ts, and it is what makes session-scoped memory possible without
+// re-deriving history on every call.
+// The agent picks which tool(s) to call and writes the final answer itself - this
+// function only executes whatever it decides and returns its own response text.
+export async function runAgent(sessionId: string, query: string): Promise<string> {
+  const chat = getOrCreateChat(sessionId, createChat);
+  let message: Parameters<Chat['sendMessage']>[0]['message'] = query;
 
-  const response = await client().models.generateContent({
-    model: getEnv().GOOGLE_GENERATIVE_AI_MODEL,
-    contents: prompt,
-  });
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const response = await chat.sendMessage({ message });
 
-  return response.text ?? '';
+    const calls = response.functionCalls ?? [];
+    if (calls.length === 0) return response.text ?? '';
+
+    const responseParts = [];
+    for (const call of calls) {
+      if (!isToolName(call.name)) {
+        responseParts.push({ functionResponse: { name: call.name ?? 'unknown', response: { error: 'unknown_tool' } } });
+        continue;
+      }
+      const result = await TOOL_HANDLERS[call.name](call.args as never);
+      responseParts.push({ functionResponse: { name: call.name, response: result as Record<string, unknown> } });
+    }
+    message = responseParts;
+  }
+
+  return "I wasn't able to finish that request - please try rephrasing it.";
 }

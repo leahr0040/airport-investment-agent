@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { parseIntentWithLLM } from '@/adapters/llm/google';
+import { runAgent } from '@/adapters/llm/google';
 import { checkRateLimit } from '@/lib/rateLimiter';
-import { scoreAirports } from '@/domain/scoring/expansionScore';
-import { buildScoringInputs } from '@/domain/scoring/buildScoringInputs';
-import { formatNarrative } from '@/lib/narrator';
 import { z } from 'zod';
 
 export async function POST(req: Request) {
@@ -23,16 +20,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: { code: 'rate_limited', message: 'Rate limit exceeded' } }, { status: 429 });
     }
 
-    const intent = await parseIntentWithLLM(query || '');
-    if (!intent.airports || intent.airports.length === 0) {
-      return NextResponse.json({ error: 'no_airports_found', parsed: intent }, { status: 400 });
-    }
-
-    const inputs = await buildScoringInputs(intent.airports);
-    const scores = scoreAirports(inputs);
-    const narrative = formatNarrative(scores, query);
-    return NextResponse.json({ ok: true, data: { narrative, scores, parsed: intent } });
+    const narrative = await runAgent(session, query);
+    return NextResponse.json({ ok: true, data: { narrative } });
   } catch (err: unknown) {
+    console.error('[api/chat]', err);
     return NextResponse.json({ ok: false, error: { code: 'internal_error', message: 'Internal error' } }, { status: 500 });
   }
 }
