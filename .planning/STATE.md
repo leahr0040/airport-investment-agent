@@ -6,9 +6,9 @@ current_phase: 03
 current_phase_name: Deterministic Scoring Engine
 status: executing
 stopped_at: Phase 3 context gathered
-last_updated: "2026-08-18T09:22:12.143Z"
+last_updated: "2026-08-18T09:33:05.916Z"
 last_activity: 2026-08-18
-last_activity_desc: "Completed quick task 260818-fr0: Implement session-scoped conversation memory for the chat agent"
+last_activity_desc: "Completed quick task 260818-hb0: Fix IN-01 chat message list key"
 progress:
   total_phases: 5
   completed_phases: 2
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 Phase: 03 (Deterministic Scoring Engine) — EXECUTING
 Plan: 1 of 2
 Status: Executing Phase 03
-Last activity: 2026-08-18 - Completed quick task 260818-gzv: Fix CR-01 lookupAirports passthrough validation gap
+Last activity: 2026-08-18 - Completed quick task 260818-hb0: Fix IN-01 chat message list key
 
 Progress: [████████░░] 80%
 
@@ -84,6 +84,7 @@ Recent decisions affecting current work:
 - [Phase 02, reconciliation, 2026-08-13]: A prior session had written plans 02-01 (partially), 02-02, 02-03, and 02-04 to disk without following the executor commit protocol — 02-01's cache.ts existed uncommitted and failed its own tests (lru-cache TTL-expiry bug, fixed by adding `ttlResolution: 0`); 02-03/02-04 had SUMMARY.md files claiming completion with zero commits, an unapproved `axios` dependency never mentioned in any plan, and a file-count deviation (opensky/nasStatus split into 5/2 files instead of the plans' 2 each). Reconciled task-by-task: fixed the cache bug, closed real gaps in the NAS Status adapter (it only read the Airport Closures block; rewritten as a generic walk over every Delay_type block), re-ran the fast-xml-parser Package Legitimacy checkpoint for real (the drift's claimed approval had no record), and committed everything with proper SUMMARY.md files.
 - [Quick 260818-gzv]: `lookupAirports`'s passthrough branch now imports `isValidIcao`/`isValidIata` from `src/domain/adapters/validate.ts` instead of relying on length-only checks, so malformed or empty input returns `[]` instead of a fabricated `{iata, icao}` pair — closes CR-01 from `01-REVIEW.md`.
 - [Phase 02, developer decision, 2026-08-13]: Explicitly directed to keep `axios` and the split-file adapter structure (opensky.ts/.client.ts/.parser.ts/.aggregator.ts/.types.ts; nasStatus.ts/.client.ts) instead of plans 02-03/02-04's single-file `fetch()`-based spec — "I want to use axios and I want the split files - the code is more clean and clear." Those two plans' literal file-shape acceptance criteria (exact file count, `AbortSignal.timeout` grep) no longer apply; the underlying behavior (3s timeout, no retry, format gate before I/O) is preserved via axios's `timeout` option plus a normalizer that maps axios's `ECONNABORTED` to the `TimeoutError`-named error the shared `toAdapterFailure` helper expects.
+- [Phase Quick 260818-hb0]: Closed IN-01 from 01-REVIEW.md - ChatMessage now carries a stable id (crypto.randomUUID()) and the render list keys on message.id instead of the array index
 
 ### Pending Todos
 
@@ -99,6 +100,7 @@ None yet.
 - **[New, 2026-08-13]** Phase 2's context-gathering session (`02-CONTEXT.md`) ran concurrently with this pivot and may have been scoped against the old resolver/registry API surface — worth a quick sanity check before `/gsd-plan-phase 2`.
 - **[New, 2026-08-13]** Phase 3's context/research/discussion-log files (`.planning/phases/03-deterministic-scoring-engine/`) are already committed, even though Phase 2 was not yet complete when they were created (part of the same session that left Phase 2 mid-flight — see reconciliation note above). Not corrupted, just out of order; worth a quick sanity check when Phase 3 planning starts, since it may have been scoped before Phase 2's live adapters (and their axios/split-file shape) existed.
 - **[New, 2026-08-13]** `.planning/config.json` has uncommitted local drift unrelated to Phase 2's code (model_profile downgraded "balanced"→"budget", `workflow.plan_check`/`workflow.verifier`/`plan.pattern_mapper` disabled, `plan.code_review_depth` lowered "standard"→"quick", `plan.ui_review` added). Left uncommitted and un-reviewed here — decide deliberately whether to keep, commit, or revert.
+- src/app/page.tsx had never been committed beyond its Phase 01-01 scaffold; quick task 260818-hb0 committed it in full (feature + IN-01 fix) since git commits are file-granular. Other pre-existing uncommitted files (layout.tsx, env.ts, buildScoringInputs.ts, instrumentation.ts, narrator.ts deletion, src/domain/agent/) remain uncommitted and out of scope - recommend a deliberate reconciliation pass, similar to the Phase 02 reconciliation already documented above.
 
 ### Quick Tasks Completed
 
@@ -108,6 +110,7 @@ None yet.
 | 260816-itv | Simplify scoreAirports component computation (resolver/reason/buildComponent helpers, no behavior change) | 2026-08-16 | 5368a96 | [260816-itv-simplify-scoreairports-component-computa](./quick/260816-itv-simplify-scoreairports-component-computa/) |
 | 260818-fr0 | Implement session-scoped conversation memory for the chat agent | 2026-08-18 | b74d2cc | [260818-fr0-implement-session-scoped-conversation-me](./quick/260818-fr0-implement-session-scoped-conversation-me/) |
 | 260818-gzv | Fix CR-01 from 01-REVIEW.md: lookupAirports passthrough branch now fails closed on empty/malformed input instead of fabricating a fake pair | 2026-08-18 | 1908486 | [260818-gzv-fix-cr-01-from-01-review-md-lookupairpor](./quick/260818-gzv-fix-cr-01-from-01-review-md-lookupairpor/) |
+| 260818-hb0 | Fix IN-01 from 01-REVIEW.md: ChatMessage carries a stable id (crypto.randomUUID()); message list keys on message.id instead of the array index | 2026-08-18 | e497b5f | [260818-hb0-fix-in-01-from-01-review-md-chat-message](./quick/260818-hb0-fix-in-01-from-01-review-md-chat-message/) |
 
 ## Deferred Items
 
@@ -122,6 +125,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-18T09:22:12.131Z
+Last session: 2026-08-18T09:32:28.654Z
 Stopped at: Phase 3 context gathered
 Resume file: .planning/phases/03-deterministic-scoring-engine/03-CONTEXT.md
