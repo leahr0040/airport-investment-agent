@@ -188,14 +188,39 @@ deterministic logic will not believe the agent.
 
 ## Conventions
 
-Conventions not yet established. Will populate as patterns emerge during development.
+- **Filenames**: camelCase (`buildScoringInputs.ts`), not kebab-case. Multi-role adapters use dotted role suffixes instead of subfolders: `opensky.client.ts` (HTTP), `opensky.parser.ts`, `opensky.aggregator.ts`, `opensky.types.ts`.
+- **Tests**: colocated as `<name>.test.ts` next to `<name>.ts`, run via `vitest run`. Live/opt-in tests use a `<name>.smoke.ts` suffix, excluded from `npm test` and run only via `npm run smoke` (`vitest.smoke.config.ts`) — they hit real upstream APIs.
+- **No barrel files.** Everything is imported from its concrete file via the `@/*` → `src/*` path alias — no `index.ts` re-exports.
+- **Types are colocated** with the implementation that owns them, except one shared `src/domain/adapters/types.ts` for the cross-adapter `AdapterResult`/`AdapterFailReason` shape.
+- **Adapters return `Promise<AdapterResult<T>>`**, never throw for expected failure modes — `{ok:false, reason, detail}`, with `detail` restricted to status/error name only (never response bodies/headers/credentials — that's the untrusted-data boundary).
+- **Validation boundaries use Zod**: env parsing (`config/env.ts`) and API request bodies (`app/api/chat/route.ts`). User- or upstream-derived airport codes are gated through a regex allowlist (`domain/adapters/validate.ts`) before ever touching an outbound URL.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
 
 ## Architecture
 
-Architecture not yet mapped. Follow existing patterns found in the codebase.
+```
+src/
+  app/                    Next.js App Router: layout.tsx, page.tsx (chat UI), api/chat/route.ts
+  config/env.ts           Single Zod-validated env schema, thrown at load with actionable per-var errors
+  instrumentation.ts      Server-startup hook — forces env.ts and the Gemini client to init at boot, not first request
+  adapters/llm/           google.ts (Gemini client + tool-round loop), sessionStore.ts (in-memory chat session TTL map)
+  lib/rateLimiter.ts      Per-session in-memory rate limiting (rate-limiter-flexible)
+  domain/
+    adapters/             One fetch<X>(icao) per upstream API (OpenSky, FAA NAS Status, FAA ADIP/ArcGIS),
+                           plus shared cache.ts, errors.ts, types.ts, validate.ts
+    airports/regions.ts   Hardcoded region-name -> ICAO/IATA lookup table
+    scoring/               Pure, deterministic scoring engine (buildScoringInputs.ts fans out to adapters,
+                           expansionScore.ts does the KPI/normalization math) — no LLM in this path
+    agent/tools.ts         Gemini tool declarations (resolve_region, score_airports) + handlers bridging
+                           LLM tool calls into domain/airports and domain/scoring
+```
+
+- **Request flow**: `POST /api/chat` → Zod-validate body → rate-limit by session → `runAgent` (Gemini `Chat`, up to `MAX_TOOL_ROUNDS`) → tool calls dispatch into `domain/agent/tools.ts` → deterministic work happens in `domain/scoring`/`domain/airports`, never in the LLM → results fed back to Gemini → JSON envelope `{ok, data|error}`.
+- **Core invariant**: the LLM only orchestrates (parses intent, picks tools, narrates); every number comes from `domain/scoring`'s pure functions, which are independently testable and unaware Gemini exists. This is the mechanism behind the project's "every number must be traceable to a deterministic computation" core value.
+- **Adapter isolation**: each upstream source fails independently — `expansionScore.ts` gates each scoring component (volume/headroom/delay) by that component's own `available`/`reason`, and equally reweights among whatever's actually available, rather than failing the whole score when one upstream is down.
+- **Caching**: `domain/adapters/cache.ts` (`lru-cache`-backed, per-key TTL) wraps every adapter call — hand-rolled sizing/TTL choices per source, no shared cache-invalidation service.
 <!-- GSD:architecture-end -->
 
 <!-- GSD:skills-start source:skills/ -->
