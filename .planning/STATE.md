@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 Phase: 03 (Deterministic Scoring Engine) — EXECUTING
 Plan: 1 of 2
 Status: Executing Phase 03
-Last activity: 2026-08-18 - Completed quick task 260818-hb0: Fix IN-01 chat message list key
+Last activity: 2026-08-19 - Completed quick task 260819-uzg: Move chat endpoint rate limiting into src/middleware.ts (per-session + per-IP backstop)
 
 Progress: [████████░░] 80%
 
@@ -115,6 +115,7 @@ None yet.
 | 260818-gzv | Fix CR-01 from 01-REVIEW.md: lookupAirports passthrough branch now fails closed on empty/malformed input instead of fabricating a fake pair | 2026-08-18 | 1908486 | [260818-gzv-fix-cr-01-from-01-review-md-lookupairpor](./quick/260818-gzv-fix-cr-01-from-01-review-md-lookupairpor/) |
 | 260818-hb0 | Fix IN-01 from 01-REVIEW.md: ChatMessage carries a stable id (crypto.randomUUID()); message list keys on message.id instead of the array index | 2026-08-18 | e497b5f | [260818-hb0-fix-in-01-from-01-review-md-chat-message](./quick/260818-hb0-fix-in-01-from-01-review-md-chat-message/) |
 | 260818-ia2 | Fix WR-01: eliminate in-flight request race in withCache (native lru-cache fetch()) and OpenSkyClient.ensureToken() (pendingTokenRequest memoization) | 2026-08-19 | ba84c46, ced0f61 | [260818-ia2-fix-wr-01-eliminate-in-flight-request-ra](./quick/260818-ia2-fix-wr-01-eliminate-in-flight-request-ra/) |
+| 260819-uzg | Move chat endpoint rate limiting into src/middleware.ts (per-session + new coarser per-IP backstop), enforced before route body parsing | 2026-08-19 | 9f4186d, 42cd608 | [260819-uzg-move-chat-endpoint-rate-limiting-into-ne](./quick/260819-uzg-move-chat-endpoint-rate-limiting-into-ne/) |
 
 ## Deferred Items
 
