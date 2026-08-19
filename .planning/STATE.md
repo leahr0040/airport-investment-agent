@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 03
-current_phase_name: Deterministic Scoring Engine
+current_phase: 04
+current_phase_name: Conversational Agent
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-08-18T09:33:05.916Z"
-last_activity: 2026-08-18
-last_activity_desc: "Completed quick task 260818-hb0: Fix IN-01 chat message list key"
+stopped_at: "Phase 4 gaps found (04-VERIFICATION.md) - user deferred gap closure"
+last_updated: "2026-08-19T21:00:00.000Z"
+last_activity: 2026-08-19
+last_activity_desc: "Closed Phase 3 bookkeeping gap - marked complete in ROADMAP.md/STATE.md (code was already done and consumed by Phase 4; only the tracking artifacts were stale)"
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 12
   completed_plans: 10
-  percent: 40
+  percent: 60
 ---
 
 # Project State
@@ -24,16 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-12)
 
 **Core value:** Every number the agent states must be traceable to a deterministic computation over real data, with its assumptions and uncertainty stated out loud.
-**Current focus:** Phase 03 — Deterministic Scoring Engine
+**Current focus:** Phase 04 — Conversational Agent (gaps found, closure deferred by explicit user direction)
 
 ## Current Position
 
-Phase: 03 (Deterministic Scoring Engine) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 03
-Last activity: 2026-08-19 - Completed quick task 260819-uzg: Move chat endpoint rate limiting into src/middleware.ts (per-session + per-IP backstop)
+Phase: 04 (Conversational Agent) — EXECUTING, gaps found
+Status: Phase 3 marked complete (bookkeeping only - code was already done); Phase 4 has real, documented gaps (see 04-VERIFICATION.md) that the user has deferred fixing for now
+Last activity: 2026-08-19 - Closed Phase 3 bookkeeping gap in ROADMAP.md/STATE.md
 
-Progress: [████████░░] 80%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -101,6 +100,7 @@ None yet.
 - **[New, 2026-08-13]** Phase 2's context-gathering session (`02-CONTEXT.md`) ran concurrently with this pivot and may have been scoped against the old resolver/registry API surface — worth a quick sanity check before `/gsd-plan-phase 2`.
 - **[New, 2026-08-13]** Phase 3's context/research/discussion-log files (`.planning/phases/03-deterministic-scoring-engine/`) are already committed, even though Phase 2 was not yet complete when they were created (part of the same session that left Phase 2 mid-flight — see reconciliation note above). Not corrupted, just out of order; worth a quick sanity check when Phase 3 planning starts, since it may have been scoped before Phase 2's live adapters (and their axios/split-file shape) existed.
 - **[New, 2026-08-13]** `.planning/config.json` has uncommitted local drift unrelated to Phase 2's code (model_profile downgraded "balanced"→"budget", `workflow.plan_check`/`workflow.verifier`/`plan.pattern_mapper` disabled, `plan.code_review_depth` lowered "standard"→"quick", `plan.ui_review` added). Left uncommitted and un-reviewed here — decide deliberately whether to keep, commit, or revert.
+- **[Phase 3, bookkeeping, 2026-08-19]** Marked Phase 3 complete in ROADMAP.md/STATE.md at explicit user direction. The code was already done (03-01's FAA facility adapter, 03-02's expansionScore.ts, both tested and code-reviewed) and actively consumed by Phase 4 - only the tracking artifacts (ROADMAP checkbox, `completed_phases`) were stale, plus 03-01 never got a SUMMARY.md. No code changed. `current_phase` advanced to 04 to match reality (Phase 4 already has substantial work and its own VERIFICATION.md).
 - **[Resolved, 2026-08-19]** src/app/page.tsx had never been committed beyond its Phase 01-01 scaffold; quick task 260818-hb0 committed it in full (feature + IN-01 fix) since git commits are file-granular. The remaining pre-existing uncommitted files (layout.tsx, env.ts, buildScoringInputs.ts, instrumentation.ts, narrator.ts deletion, src/domain/agent/) were reconciled and committed during `/gsd-execute-phase 4` (commits `ba84c46`, `ced0f61`, `b36fe62`, `9ac5f4b`) — this also fixed a genuinely broken HEAD (the previously-committed google.ts imported `@/domain/agent/tools`, which had never been added to git). See `04-SUMMARY.md` for the full account.
 - **[New, 2026-08-19]** `buildScoringInputs.ts`'s `MAX_AIRPORTS_PER_QUERY` quota cap (6 airports/query, guards OpenSky's daily credit budget against unbounded region-query fan-out) was found dropped from an uncommitted edit during Phase 4 reconciliation. Presented to the user with rationale; user chose to leave it unfixed for now. Not restored — needs a decision before wide production use.
 - **[New, 2026-08-19]** A quick grep during Phase 4 reconciliation found no long-haul/great-circle-distance logic anywhere in `src/domain/scoring/` or `src/domain/agent/` — QUERY-03's requirement ("share of long-haul flights ... by great-circle distance against a stated, cited threshold") appears unimplemented. Not independently chased further; left for the phase verifier to confirm and scope.

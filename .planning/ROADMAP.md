@@ -25,7 +25,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation — Configuration, Airport Registry & Resolution** - App boots only with valid config; a hardcoded lookup table expands known region/metro names to airport codes (scope reduced 2026-08-13 — see Phase Details)
 - [x] **Phase 2: Live Data Adapters & Caching** - OpenSky and FAA NAS status are fetched, cached per-source, and fail in isolation (completed 2026-08-13)
-- [ ] **Phase 3: Deterministic Scoring Engine** - The graded core: a pure, zero-I/O, unit-tested Expansion Opportunity Score with visible weights and cargo/passenger separation
+- [x] **Phase 3: Deterministic Scoring Engine** - The graded core: a pure, zero-I/O, unit-tested Expansion Opportunity Score with visible weights and cargo/passenger separation (completed 2026-08-19)
 - [ ] **Phase 4: Conversational Agent — Chat, Tool-Calling & Analyst Questions** - Analyst asks questions in plain English and gets ranked, explained, narrated answers with follow-up support
 - [ ] **Phase 5: Security Hardening, Design Doc & Submission Packaging** - Guardrails verified end-to-end; design doc explains methodology, tradeoffs, and AI usage
 
@@ -110,16 +110,18 @@ Plans:
   4. A cargo-dominated airport fixture (Anchorage-shaped) is scored with cargo movements identified and handled separately from passenger movements, rather than inflating a naive long-haul percentage.
   5. The unit test suite runs the scoring engine against fixed fixtures and proves identical inputs always produce identical scores.
 
-**Plans**: 2 plans
+**Plans**: 2/2 plans executed (03-01 has no SUMMARY.md on disk - see note below)
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Rebuild DATA-01 as a minimal per-request FAA ArcGIS facility/runway adapter (D-01) (wave 1)
+- [x] 03-01-PLAN.md — Rebuild DATA-01 as a minimal per-request FAA ArcGIS facility/runway adapter (D-01) (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — Pure Expansion Opportunity Score: weights, normalization, cargo/passenger separation, deterministic fixture tests (wave 2)
+- [x] 03-02-PLAN.md — Pure Expansion Opportunity Score: weights, normalization, cargo/passenger separation, deterministic fixture tests (wave 2)
+
+> **Bookkeeping note, 2026-08-19.** 03-01's code (`faaFacility.ts`/`.client.ts` + tests) is committed, tested, and consumed successfully by Phase 4 - but no `03-01-SUMMARY.md` was ever written, so GSD's own plan index still reports it incomplete. Marked complete here based on independent confirmation (code review, Phase 4's verifier) that the code is real and working, not on a SUMMARY.md artifact. See `03-REVIEW.md`/`03-REVIEWS.md` for the review history.
 
 ### Phase 4: Conversational Agent — Chat, Tool-Calling & Analyst Questions
 
@@ -159,6 +161,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 |-------|----------------|--------|-----------|
 | 1. Foundation — Configuration, Airport Registry & Resolution | 4/4 | Complete (scope reduced 2026-08-13) | 2026-08-13 |
 | 2. Live Data Adapters & Caching | 5/5 | Complete    | 2026-08-13 |
-| 3. Deterministic Scoring Engine | 0/2 | Planned | - |
+| 3. Deterministic Scoring Engine | 2/2 | Complete | 2026-08-19 |
 | 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 0/TBD | Not started | - |
 | 5. Security Hardening, Design Doc & Submission Packaging | 0/TBD | Not started | - |
