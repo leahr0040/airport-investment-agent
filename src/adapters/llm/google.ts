@@ -18,8 +18,9 @@ const AGENT_MODEL = getEnv().GOOGLE_GENERATIVE_AI_MODEL;
 const AGENT_TOOLS = [{ functionDeclarations: TOOL_DECLARATIONS as never }];
 const TOOL_CALLING_CONFIG = { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } };
 
+const TOOL_NAMES = new Set(TOOL_DECLARATIONS.map((t) => t.name));
 function isToolName(name: string | undefined): name is ToolName {
-  return name === 'resolve_region' || name === 'score_airports';
+  return name !== undefined && TOOL_NAMES.has(name as ToolName);
 }
 
 function createChat(): Chat {

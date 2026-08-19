@@ -14,7 +14,7 @@ vi.mock('@google/genai', () => ({
 }));
 
 vi.mock('@/domain/agent/tools', () => ({
-  TOOL_DECLARATIONS: [],
+  TOOL_DECLARATIONS: [{ name: 'resolve_region' }, { name: 'score_airports' }],
   TOOL_HANDLERS: {
     resolve_region: vi.fn(),
     score_airports: vi.fn(),
