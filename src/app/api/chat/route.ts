@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { runAgent } from '@/adapters/llm/google';
-import { checkRateLimit } from '@/lib/rateLimiter';
 import { z } from 'zod';
 
 export async function POST(req: Request) {
@@ -15,11 +14,6 @@ export async function POST(req: Request) {
     }
 
     const session = req.headers.get('x-session-id') ?? req.headers.get('x-forwarded-for') ?? 'anon';
-    const rateLimitResult = await checkRateLimit(String(session));
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json({ ok: false, error: { code: 'rate_limited', message: 'Rate limit exceeded' } }, { status: 429 });
-    }
-
     const narrative = await runAgent(session, query);
     return NextResponse.json({ ok: true, data: { narrative } });
   } catch (err: unknown) {

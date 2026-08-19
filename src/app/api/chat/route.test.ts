@@ -37,14 +37,4 @@ describe('POST /api/chat', () => {
     expect(body.ok).toBe(true);
     expect(body.data.narrative).toBe('I can help with airport expansion questions.');
   });
-
-  it('rejects a session once it exceeds the rate limit', async () => {
-    vi.mocked(runAgent).mockResolvedValue('ok');
-    const sessionId = `burst-${Date.now()}`;
-    let last: Response | undefined;
-    for (let i = 0; i < 11; i++) {
-      last = await POST(postRequest({ query: 'Compare KATL and KSFO' }, sessionId));
-    }
-    expect(last!.status).toBe(429);
-  });
 });
