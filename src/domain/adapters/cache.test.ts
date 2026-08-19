@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { clearCache, getCacheStats, withCache } from "./cache";
+import { clearCache, withCache } from "./cache";
 
 describe("withCache", () => {
   beforeEach(() => {
@@ -55,6 +55,19 @@ describe("withCache", () => {
     expect(longProducer).toHaveBeenCalledTimes(1);
   });
 
+  it("serves two concurrent same-key calls from a single producer invocation", async () => {
+    const producer = vi.fn().mockResolvedValue({ value: "shared" });
+
+    const [first, second] = await Promise.all([
+      withCache("concurrent-key", 60_000, producer),
+      withCache("concurrent-key", 60_000, producer),
+    ]);
+
+    expect(first).toEqual({ value: "shared" });
+    expect(second).toEqual({ value: "shared" });
+    expect(producer).toHaveBeenCalledTimes(1);
+  });
+
   it("propagates a rejected producer and does not cache its failure", async () => {
     const producer = vi.fn().mockRejectedValue(new Error("upstream unavailable"));
 
@@ -64,24 +77,6 @@ describe("withCache", () => {
     expect(producer).toHaveBeenCalledTimes(2);
   });
 
-  it("tracks misses on cold reads and hits on warm reads", async () => {
-    const producer = vi.fn().mockResolvedValue("value");
-
-    await withCache("opensky:KATL", 60_000, producer);
-    expect(getCacheStats()).toEqual({ hits: 0, misses: 1, size: 1 });
-    await withCache("opensky:KATL", 60_000, producer);
-
-    expect(getCacheStats()).toEqual({ hits: 1, misses: 1, size: 1 });
-  });
-
-  it("supports a producer that resolves to undefined", async () => {
-    const producer = vi.fn().mockResolvedValue(undefined);
-
-    await expect(withCache("optional", 60_000, producer)).resolves.toBeUndefined();
-    await expect(withCache("optional", 60_000, producer)).resolves.toBeUndefined();
-
-    expect(producer).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe("clearCache", () => {
@@ -89,10 +84,13 @@ describe("clearCache", () => {
     clearCache();
   });
 
-  it("empties the cache and resets its statistics", async () => {
-    await withCache("opensky:KATL", 60_000, async () => "value");
-    clearCache();
+  it("purges entries so a since-cleared key invokes its producer again", async () => {
+    const producer = vi.fn().mockResolvedValue("value");
 
-    expect(getCacheStats()).toEqual({ hits: 0, misses: 0, size: 0 });
+    await withCache("opensky:KATL", 60_000, producer);
+    clearCache();
+    await withCache("opensky:KATL", 60_000, producer);
+
+    expect(producer).toHaveBeenCalledTimes(2);
   });
 });

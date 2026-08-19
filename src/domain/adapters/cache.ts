@@ -7,7 +7,12 @@ export const FAA_FACILITY_TTL_MS = 24 * 60 * 60 * 1000;
 
 // lru-cache constrains V to `{}` (excludes null/undefined) - NonNullable<unknown> satisfies that
 // without falling back to `any`; callers still cast on read via withCache<T>'s `as T`.
-const cache = new LRUCache<string, NonNullable<unknown>>({
+type Producer = () => Promise<NonNullable<unknown>>;
+
+// fetchMethod is constructor-only and shared across all keys, so it can't be swapped per call -
+// it reads the actual per-call producer out of `context` instead. This still gets fetch()'s
+// native in-flight de-duplication for concurrent same-key calls, no hand-rolled Map needed.
+const cache = new LRUCache<string, NonNullable<unknown>, Producer>({
   max: 2000,
   // lru-cache initializes per-entry TTL tracking only when this is set; every caller overrides it.
   ttl: 1,
@@ -15,35 +20,18 @@ const cache = new LRUCache<string, NonNullable<unknown>>({
   // Default ttlResolution (1ms) debounces "now" behind a setTimeout that fake-timer
   // teardown between tests silently drops, freezing staleness checks. 0 disables the debounce.
   ttlResolution: 0,
+  fetchMethod: (_key, _stale, { context }) => context(),
 });
-const UNDEFINED_VALUE = Symbol("undefined cache value");
-let hits = 0;
-let misses = 0;
 
-export async function withCache<T>(
+export async function withCache<T extends NonNullable<unknown>>(
   key: string,
   ttlMs: number,
   fn: () => Promise<T>,
 ): Promise<T> {
-  if (cache.has(key)) {
-    hits += 1;
-    const cached = cache.get(key);
-    return (cached === UNDEFINED_VALUE ? undefined : cached) as T;
-  }
-
-  misses += 1;
-  const value = await fn();
-  cache.set(key, (value === undefined ? UNDEFINED_VALUE : value) as NonNullable<unknown>, { ttl: ttlMs });
-  return value;
-}
-
-export function getCacheStats(): { hits: number; misses: number; size: number } {
-  cache.purgeStale();
-  return { hits, misses, size: cache.size };
+  const value = await cache.fetch(key, { ttl: ttlMs, context: fn });
+  return value as T;
 }
 
 export function clearCache(): void {
   cache.clear();
-  hits = 0;
-  misses = 0;
 }
