@@ -32,6 +32,20 @@ describe('OpenSkyClient', () => {
     expect(mockHttp.post).toHaveBeenCalledTimes(1);
   });
 
+  it('memoizes concurrent ensureToken calls into a single token request', async () => {
+    const mockHttp = {
+      post: vi.fn().mockResolvedValue({ status: 200, data: { access_token: 'tok-concurrent', expires_in: 3600 } }),
+    } as unknown as HttpClient;
+
+    const client = new OpenSkyClient(3000, mockHttp);
+
+    const [t1, t2] = await Promise.all([client.ensureToken(), client.ensureToken()]);
+
+    expect(t1).toBe('tok-concurrent');
+    expect(t2).toBe('tok-concurrent');
+    expect(mockHttp.post).toHaveBeenCalledTimes(1);
+  });
+
   it('maps 429 to rate_limited error', async () => {
     const mockHttp = {
       get: vi.fn().mockResolvedValue({ status: 429, data: {} }),

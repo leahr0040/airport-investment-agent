@@ -17,6 +17,7 @@ export type HttpClient = {
 export class OpenSkyClient {
   private cachedToken: string | null = null;
   private tokenExpiryMs = 0;
+  private pendingTokenRequest: Promise<string> | null = null;
   private readonly timeoutMs: number;
 
   constructor(timeoutMs = 3000, private http: HttpClient = axios as unknown as HttpClient) {
@@ -67,11 +68,20 @@ export class OpenSkyClient {
   async ensureToken(): Promise<string> {
     const now = Date.now();
     if (this.cachedToken && this.tokenExpiryMs - 30_000 > now) return this.cachedToken;
+    if (this.pendingTokenRequest) return this.pendingTokenRequest;
+
     const env = getEnv();
-    const tokenResponse = await this.requestToken(env);
-    this.cachedToken = tokenResponse.access_token;
-    this.tokenExpiryMs = Date.now() + tokenResponse.expires_in * 1000;
-    return this.cachedToken;
+    const pending = this.requestToken(env)
+      .then((tokenResponse) => {
+        this.cachedToken = tokenResponse.access_token;
+        this.tokenExpiryMs = Date.now() + tokenResponse.expires_in * 1000;
+        return this.cachedToken;
+      })
+      .finally(() => {
+        this.pendingTokenRequest = null;
+      });
+    this.pendingTokenRequest = pending;
+    return pending;
   }
 
   async requestLegUrl(url: string, token: string): Promise<Record<string, unknown>[]> {
