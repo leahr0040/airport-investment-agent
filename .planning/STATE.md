@@ -85,6 +85,7 @@ Recent decisions affecting current work:
 - [Quick 260818-gzv]: `lookupAirports`'s passthrough branch now imports `isValidIcao`/`isValidIata` from `src/domain/adapters/validate.ts` instead of relying on length-only checks, so malformed or empty input returns `[]` instead of a fabricated `{iata, icao}` pair — closes CR-01 from `01-REVIEW.md`.
 - [Phase 02, developer decision, 2026-08-13]: Explicitly directed to keep `axios` and the split-file adapter structure (opensky.ts/.client.ts/.parser.ts/.aggregator.ts/.types.ts; nasStatus.ts/.client.ts) instead of plans 02-03/02-04's single-file `fetch()`-based spec — "I want to use axios and I want the split files - the code is more clean and clear." Those two plans' literal file-shape acceptance criteria (exact file count, `AbortSignal.timeout` grep) no longer apply; the underlying behavior (3s timeout, no retry, format gate before I/O) is preserved via axios's `timeout` option plus a normalizer that maps axios's `ECONNABORTED` to the `TimeoutError`-named error the shared `toAdapterFailure` helper expects.
 - [Phase Quick 260818-hb0]: Closed IN-01 from 01-REVIEW.md - ChatMessage now carries a stable id (crypto.randomUUID()) and the render list keys on message.id instead of the array index
+- [Phase Quick 260818-ia2]: Closed WR-01 - withCache now single-flights concurrent same-key calls via lru-cache's native fetch(); OpenSkyClient.ensureToken() memoizes its in-flight token request. Task 1 (withCache) was found already implemented but uncommitted with a deviation from its own plan: it dropped the hits/misses counters and getCacheStats() (no remaining caller) rather than preserving them, which also means a producer resolving to bare `undefined` is no longer cached - currently latent since no real withCache caller resolves to undefined. Not restored (out of this pass's approved scope); flagged here for visibility.
 
 ### Pending Todos
 
@@ -111,6 +112,7 @@ None yet.
 | 260818-fr0 | Implement session-scoped conversation memory for the chat agent | 2026-08-18 | b74d2cc | [260818-fr0-implement-session-scoped-conversation-me](./quick/260818-fr0-implement-session-scoped-conversation-me/) |
 | 260818-gzv | Fix CR-01 from 01-REVIEW.md: lookupAirports passthrough branch now fails closed on empty/malformed input instead of fabricating a fake pair | 2026-08-18 | 1908486 | [260818-gzv-fix-cr-01-from-01-review-md-lookupairpor](./quick/260818-gzv-fix-cr-01-from-01-review-md-lookupairpor/) |
 | 260818-hb0 | Fix IN-01 from 01-REVIEW.md: ChatMessage carries a stable id (crypto.randomUUID()); message list keys on message.id instead of the array index | 2026-08-18 | e497b5f | [260818-hb0-fix-in-01-from-01-review-md-chat-message](./quick/260818-hb0-fix-in-01-from-01-review-md-chat-message/) |
+| 260818-ia2 | Fix WR-01: eliminate in-flight request race in withCache (native lru-cache fetch()) and OpenSkyClient.ensureToken() (pendingTokenRequest memoization) | 2026-08-19 | ba84c46, ced0f61 | [260818-ia2-fix-wr-01-eliminate-in-flight-request-ra](./quick/260818-ia2-fix-wr-01-eliminate-in-flight-request-ra/) |
 
 ## Deferred Items
 
