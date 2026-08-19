@@ -46,8 +46,8 @@ export class FaaFacilityClient {
     }
 
     const body = response.data as { features?: { attributes: Record<string, unknown> }[]; error?: { code?: number; message?: string } };
-    if (body && typeof body === 'object' && 'error' in body && (body as any).error) {
-      const errMsg = (body as any).error?.message ?? 'ArcGisError';
+    if (body && typeof body === 'object' && body.error) {
+      const errMsg = body.error.message ?? 'ArcGisError';
       throw Object.assign(new Error(errMsg), { reason: 'error' });
     }
 
