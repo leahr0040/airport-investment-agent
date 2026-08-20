@@ -8,6 +8,7 @@ import {
   scoreAirports,
   CARGO_CALLSIGN_PREFIXES,
   computeVolumeKpi,
+  VOLUME_PROXY_DISCLOSURE,
 } from './expansionScore';
 
 function movementsWithCallsigns(callsigns: (string | null)[]): Movements {
@@ -275,5 +276,33 @@ describe('expansionScore (phase plan)', () => {
     // XYZ not in list -> passenger
     // null callsign never classified as cargo
     expect(kpi.passengerMovements).toBeGreaterThanOrEqual(1);
+  });
+
+  it('case group 8 (QUERY-05): computeVolumeKpi threads the real data window and a proxy disclosure', () => {
+    const movements = movementsWithCallsigns(['UAL1', 'SWA1']);
+    const window = { begin: 1000, end: 2000, beginIso: '2026-08-19T00:00:00.000Z', endIso: '2026-08-19T00:16:40.000Z' };
+    movements.window = window;
+
+    const kpi = computeVolumeKpi(movements);
+    expect(kpi.window).toEqual(window);
+    expect(kpi.measuredVsProxied).toBe(VOLUME_PROXY_DISCLOSURE);
+  });
+
+  it('case group 8 (QUERY-05): scoreAirports carries the window through to components.volume.kpi when volume is available', () => {
+    const window = { begin: 1000, end: 2000, beginIso: '2026-08-19T00:00:00.000Z', endIso: '2026-08-19T00:16:40.000Z' };
+    const movements = movementsWithCallsigns(['UAL1', 'SWA1']);
+    movements.window = window;
+
+    const V = {
+      icao: 'V',
+      movements: ok(movements),
+      facility: ok(facilityWithRunways(1)),
+      nasStatus: ok(nasStatusWithEvents(0)),
+    };
+
+    const results = scoreAirports([V]);
+    const v = results[0];
+    expect(v.components.volume.available).toBe(true);
+    expect(v.components.volume.kpi!.window).toEqual(window);
   });
 });

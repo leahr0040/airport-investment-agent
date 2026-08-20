@@ -8,7 +8,19 @@ export const CARGO_CALLSIGN_PREFIXES = ['FDX', 'UPS', 'GTI', 'CKS', 'ABX', 'PAC'
 
 export const SCORING_WEIGHTS = { volume: 1 / 3, headroom: 1 / 3, delayFrequency: 1 / 3 } as const;
 
-export type VolumeKpi = { passengerMovements: number; cargoMovements: number; totalMovements: number };
+// passengerMovements/cargoMovements are movement counts (departures+arrivals classified by callsign
+// prefix), not measured passenger/cargo volume - CLAUDE.md's documented proxy trade-off, surfaced here
+// so score_airports' tool result can disclose it verbatim rather than leaving it implicit.
+export const VOLUME_PROXY_DISCLOSURE =
+  'passengerMovements and cargoMovements are movement-count proxies (flights classified by callsign prefix), not measured passenger or cargo volume.';
+
+export type VolumeKpi = {
+  passengerMovements: number;
+  cargoMovements: number;
+  totalMovements: number;
+  window: Movements['window'];
+  measuredVsProxied: string;
+};
 export type HeadroomKpi = { movementsPerRunway: number; runwayCount: number; totalMovements: number };
 export type DelayKpi = { eventCount: number };
 
@@ -55,7 +67,7 @@ export function computeVolumeKpi(movements: Movements): VolumeKpi {
     if (isCargoCallsign(f.callsign)) cargoMovements += 1;
   }
   const passengerMovements = Math.max(0, totalMovements - cargoMovements);
-  return { passengerMovements, cargoMovements, totalMovements };
+  return { passengerMovements, cargoMovements, totalMovements, window: movements.window, measuredVsProxied: VOLUME_PROXY_DISCLOSURE };
 }
 
 // Precondition: caller must only invoke this with facility.runways.length > 0 —
