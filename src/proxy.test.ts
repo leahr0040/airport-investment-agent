@@ -6,7 +6,7 @@ vi.mock('@/lib/middleware/sessionRateLimitCheck', () => ({ sessionRateLimitCheck
 import { NextRequest, NextResponse } from 'next/server';
 import { ipRateLimitCheck } from '@/lib/middleware/ipRateLimitCheck';
 import { sessionRateLimitCheck } from '@/lib/middleware/sessionRateLimitCheck';
-import { middleware } from './middleware';
+import { proxy } from './proxy';
 
 function req() {
   return new NextRequest('http://localhost/api/chat');
@@ -17,7 +17,7 @@ const RATE_LIMITED_RESPONSE = NextResponse.json(
   { status: 429 },
 );
 
-describe('middleware', () => {
+describe('proxy', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
@@ -26,7 +26,7 @@ describe('middleware', () => {
     vi.mocked(ipRateLimitCheck).mockResolvedValueOnce(RATE_LIMITED_RESPONSE);
     vi.mocked(sessionRateLimitCheck).mockResolvedValueOnce(null);
 
-    const res = await middleware(req());
+    const res = await proxy(req());
     expect(res.status).toBe(429);
     expect(sessionRateLimitCheck).toHaveBeenCalledTimes(0);
   });
@@ -35,7 +35,7 @@ describe('middleware', () => {
     vi.mocked(ipRateLimitCheck).mockResolvedValueOnce(null);
     vi.mocked(sessionRateLimitCheck).mockResolvedValueOnce(RATE_LIMITED_RESPONSE);
 
-    const res = await middleware(req());
+    const res = await proxy(req());
     expect(res.status).toBe(429);
 
     const body = await res.json();
@@ -46,7 +46,7 @@ describe('middleware', () => {
     vi.mocked(ipRateLimitCheck).mockResolvedValueOnce(null);
     vi.mocked(sessionRateLimitCheck).mockResolvedValueOnce(null);
 
-    const res = await middleware(req());
+    const res = await proxy(req());
     expect(res.status).toBe(200);
   });
 });

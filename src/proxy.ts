@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ipRateLimitCheck } from '@/lib/middleware/ipRateLimitCheck';
 import { sessionRateLimitCheck } from '@/lib/middleware/sessionRateLimitCheck';
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const ipBlocked = await ipRateLimitCheck(req);
   if (ipBlocked) return ipBlocked;
 
@@ -12,4 +12,4 @@ export async function middleware(req: NextRequest) {
   return NextResponse.next();
 }
 
-export const config = { matcher: '/api/chat', runtime: 'nodejs' };
+export const config = { matcher: '/api/chat' };
