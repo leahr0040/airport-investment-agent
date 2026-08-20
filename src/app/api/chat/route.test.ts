@@ -37,4 +37,17 @@ describe('POST /api/chat', () => {
     expect(body.ok).toBe(true);
     expect(body.data.narrative).toBe('I can help with airport expansion questions.');
   });
+
+  it('does not fall back to x-forwarded-for for session identity', async () => {
+    vi.mocked(runAgent).mockResolvedValueOnce('ok');
+
+    const req = new Request('http://localhost/api/chat', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-forwarded-for': '1.2.3.4' },
+      body: JSON.stringify({ query: 'hello' }),
+    });
+    await POST(req);
+
+    expect(runAgent).toHaveBeenCalledWith(null, 'hello');
+  });
 });

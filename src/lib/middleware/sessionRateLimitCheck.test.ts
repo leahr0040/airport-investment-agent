@@ -29,15 +29,4 @@ describe('sessionRateLimitCheck', () => {
     const body = await result!.json();
     expect(body).toEqual({ ok: false, error: { code: 'rate_limited', message: 'Rate limit exceeded' } });
   });
-
-  it('falls back to x-forwarded-for, then "anon", when x-session-id is absent', async () => {
-    vi.mocked(checkRateLimit).mockResolvedValueOnce({ allowed: true });
-
-    await sessionRateLimitCheck(req({ 'x-forwarded-for': '5.6.7.8' }));
-    expect(checkRateLimit).toHaveBeenCalledWith('5.6.7.8');
-
-    vi.mocked(checkRateLimit).mockResolvedValueOnce({ allowed: true });
-    await sessionRateLimitCheck(req());
-    expect(checkRateLimit).toHaveBeenCalledWith('anon');
-  });
 });

@@ -13,7 +13,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: { code: 'invalid_request', message: 'Expected {query: string}' } }, { status: 400 });
     }
 
-    const session = req.headers.get('x-session-id') ?? req.headers.get('x-forwarded-for') ?? 'anon';
+    // proxy.ts (matcher: /api/chat) validates this header as a UUID before this route ever runs.
+    const session = req.headers.get('x-session-id')!;
     const narrative = await runAgent(session, query);
     return NextResponse.json({ ok: true, data: { narrative } });
   } catch (err: unknown) {
