@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: conversational-agent
 status: executing
-stopped_at: Completed 04-02-PLAN.md - gap closure (QUERY-03/04/05)
-last_updated: "2026-08-20T11:34:14.414Z"
+stopped_at: Completed quick task 260820-kvr - renamed src/middleware.ts to src/proxy.ts
+last_updated: "2026-08-20T12:15:05.000Z"
 last_activity: 2026-08-20
-last_activity_desc: Completed 04-02-PLAN.md (gap closure - QUERY-03/QUERY-04/QUERY-05)
+last_activity_desc: Completed quick task 260820-kvr (rename src/middleware.ts to src/proxy.ts)
 progress:
   total_phases: 5
   completed_phases: 4
@@ -121,6 +121,7 @@ None yet.
 | 260818-hb0 | Fix IN-01 from 01-REVIEW.md: ChatMessage carries a stable id (crypto.randomUUID()); message list keys on message.id instead of the array index | 2026-08-18 | e497b5f | [260818-hb0-fix-in-01-from-01-review-md-chat-message](./quick/260818-hb0-fix-in-01-from-01-review-md-chat-message/) |
 | 260818-ia2 | Fix WR-01: eliminate in-flight request race in withCache (native lru-cache fetch()) and OpenSkyClient.ensureToken() (pendingTokenRequest memoization) | 2026-08-19 | ba84c46, ced0f61 | [260818-ia2-fix-wr-01-eliminate-in-flight-request-ra](./quick/260818-ia2-fix-wr-01-eliminate-in-flight-request-ra/) |
 | 260819-uzg | Move chat endpoint rate limiting into src/middleware.ts (per-session + new coarser per-IP backstop), enforced before route body parsing | 2026-08-19 | 9f4186d, 42cd608 | [260819-uzg-move-chat-endpoint-rate-limiting-into-ne](./quick/260819-uzg-move-chat-endpoint-rate-limiting-into-ne/) |
+| 260820-kvr | Rename src/middleware.ts to src/proxy.ts for the Next.js 16 Proxy file convention (dropped invalid runtime config key, no behavior change) | 2026-08-20 | 1829d96 | [260820-kvr-rename-src-middleware-ts-to-src-proxy-ts](./quick/260820-kvr-rename-src-middleware-ts-to-src-proxy-ts/) |
 
 ## Deferred Items
 
@@ -135,6 +136,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-20T11:33:18.729Z
-Stopped at: Completed 04-02-PLAN.md - gap closure (QUERY-03/04/05)
+Last session: 2026-08-20T12:15:05.000Z
+Stopped at: Completed quick task 260820-kvr - renamed src/middleware.ts to src/proxy.ts
 Resume file: None
