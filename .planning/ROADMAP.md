@@ -136,8 +136,14 @@ Plans:
   4. Given a region, two named airports, or one named airport, the analyst gets: a ranked list with scores; a side-by-side single-KPI comparison with the difference; the long-haul flight share computed by great-circle distance against a stated, cited threshold; or an airport-specific unmet-demand explanation naming the physical cause via runway separation cross-referenced with delay conditions — and every answer states its assumptions, the data window used, and what is measured versus proxied.
   5. The chat transport sits behind an adapter interface with a single text implementation, and text drawn from third-party API responses is treated as untrusted data inside the LLM context, never as instructions.
 
-**Plans**: TBD
+**Plans**: 2 plans (04-PLAN.md — original tracer, unstructured; 04-02-PLAN.md — gap closure)
 **UI hint**: yes
+
+Plans:
+**Wave 1**
+
+- [x] 04-PLAN.md — Original tracer: chat transport, Gemini native tool-calling (resolve_region, score_airports), session memory, rate limiting (unstructured, predates GSD plan format; see 04-SUMMARY.md)
+- [ ] 04-02-PLAN.md — Gap closure (04-VERIFICATION.md): flight_destinations + runway_conditions tools, OpenSky data-window/proxy threading, SYSTEM_PROMPT disclosure requirements (QUERY-03, QUERY-04, QUERY-05)
 
 ### Phase 5: Security Hardening, Design Doc & Submission Packaging
 
