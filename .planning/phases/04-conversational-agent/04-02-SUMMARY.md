@@ -157,3 +157,7 @@ None - no external service configuration required.
 ---
 *Phase: 04-conversational-agent*
 *Completed: 2026-08-20*
+
+## Self-Check: PASSED
+
+All files and commit hashes referenced above were verified to exist on disk / in git history.
