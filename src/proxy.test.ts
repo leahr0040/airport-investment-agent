@@ -8,8 +8,10 @@ import { ipRateLimitCheck } from '@/lib/middleware/ipRateLimitCheck';
 import { sessionRateLimitCheck } from '@/lib/middleware/sessionRateLimitCheck';
 import { proxy } from './proxy';
 
-function req() {
-  return new NextRequest('http://localhost/api/chat');
+const VALID_SESSION_ID = '123e4567-e89b-12d3-a456-426614174000';
+
+function req(headers: Record<string, string> = { 'x-session-id': VALID_SESSION_ID }) {
+  return new NextRequest('http://localhost/api/chat', { headers });
 }
 
 const RATE_LIMITED_RESPONSE = NextResponse.json(
@@ -48,5 +50,29 @@ describe('proxy', () => {
 
     const res = await proxy(req());
     expect(res.status).toBe(200);
+  });
+
+  it('returns 400 invalid_session_id when x-session-id is missing', async () => {
+    vi.mocked(ipRateLimitCheck).mockResolvedValueOnce(null);
+    vi.mocked(sessionRateLimitCheck).mockResolvedValueOnce(null);
+
+    const res = await proxy(req({}));
+    expect(res.status).toBe(400);
+
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: { code: 'invalid_session_id', message: 'x-session-id header must be a valid UUID' } });
+    expect(sessionRateLimitCheck).toHaveBeenCalledTimes(0);
+  });
+
+  it('returns 400 invalid_session_id when x-session-id is not a valid UUID', async () => {
+    vi.mocked(ipRateLimitCheck).mockResolvedValueOnce(null);
+    vi.mocked(sessionRateLimitCheck).mockResolvedValueOnce(null);
+
+    const res = await proxy(req({ 'x-session-id': 'not-a-uuid' }));
+    expect(res.status).toBe(400);
+
+    const body = await res.json();
+    expect(body).toEqual({ ok: false, error: { code: 'invalid_session_id', message: 'x-session-id header must be a valid UUID' } });
+    expect(sessionRateLimitCheck).toHaveBeenCalledTimes(0);
   });
 });
