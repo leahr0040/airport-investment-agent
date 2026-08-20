@@ -5,10 +5,10 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: conversational-agent
 status: executing
-stopped_at: Completed quick task 260820-lx1 - fixed CR-02 session-id hijack, validated x-session-id in proxy.ts
-last_updated: "2026-08-20T13:00:44.154Z"
+stopped_at: Completed quick task 260820-mgm - extracted sessionIdValidationCheck middleware from proxy.ts
+last_updated: "2026-08-20T13:15:55.952Z"
 last_activity: 2026-08-20
-last_activity_desc: Completed quick task 260820-lx1 (fix CR-02 session-id hijack)
+last_activity_desc: Completed quick task 260820-mgm (extract sessionIdValidationCheck middleware)
 progress:
   total_phases: 5
   completed_phases: 4
@@ -90,6 +90,7 @@ Recent decisions affecting current work:
 - [Phase 04-02]: runwayConditionsTool fetches fetchFaaFacility and fetchNasStatus independently via Promise.all so one source failing does not blank the other's half of the result, matching buildScoringInputs' existing per-source failure-isolation pattern
 - [Phase 04-02]: User declined the plan's proposed new SYSTEM_PROMPT-content test in google.test.ts during Task 3 review; SYSTEM_PROMPT was still exported and extended with all required disclosure language, verified manually by grep instead of an automated assertion
 - [Quick 260820-lx1]: Closed CR-02 from 04-REVIEW.md - proxy.ts now validates x-session-id as a strict UUID via zod before either sessionRateLimitCheck.ts or route.ts run; both downstream consumers dropped their independent x-forwarded-for/'anon' fallback chains, closing the session-hijack/collision vector
+- [Quick 260820-mgm]: Extracted sessionIdValidationCheck.ts from proxy.ts's inline z.uuid() check, matching the ipRateLimitCheck/sessionRateLimitCheck one-function-per-file pattern - pure refactor, no behavior change
 
 ### Pending Todos
 
@@ -124,6 +125,7 @@ None yet.
 | 260819-uzg | Move chat endpoint rate limiting into src/middleware.ts (per-session + new coarser per-IP backstop), enforced before route body parsing | 2026-08-19 | 9f4186d, 42cd608 | [260819-uzg-move-chat-endpoint-rate-limiting-into-ne](./quick/260819-uzg-move-chat-endpoint-rate-limiting-into-ne/) |
 | 260820-kvr | Rename src/middleware.ts to src/proxy.ts for the Next.js 16 Proxy file convention (dropped invalid runtime config key, no behavior change) | 2026-08-20 | 1829d96 | [260820-kvr-rename-src-middleware-ts-to-src-proxy-ts](./quick/260820-kvr-rename-src-middleware-ts-to-src-proxy-ts/) |
 | 260820-lx1 | Fix CR-02 from 04-REVIEW.md: proxy.ts validates x-session-id as a strict UUID before sessionRateLimitCheck.ts/route.ts run; both drop their spoofable x-forwarded-for/'anon' fallback chains | 2026-08-20 | 33b36d5, f8e9941 | [260820-lx1-fix-cr-02-session-id-hijack-validate-x-s](./quick/260820-lx1-fix-cr-02-session-id-hijack-validate-x-s/) |
+| 260820-mgm | Extract sessionIdValidationCheck.ts from proxy.ts's inline z.uuid() check, matching the ipRateLimitCheck/sessionRateLimitCheck one-function-per-file pattern | 2026-08-20 | e86275e, 0e32259 | [260820-mgm-extract-x-session-id-uuid-validation-fro](./quick/260820-mgm-extract-x-session-id-uuid-validation-fro/) |
 
 ## Deferred Items
 
@@ -138,6 +140,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-20T13:00:44.154Z
-Stopped at: Completed quick task 260820-lx1 - fixed CR-02 session-id hijack, validated x-session-id in proxy.ts
+Last session: 2026-08-20T13:15:39.768Z
+Stopped at: Completed quick task 260820-mgm - extracted sessionIdValidationCheck middleware from proxy.ts
 Resume file: None
