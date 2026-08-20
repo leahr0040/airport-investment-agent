@@ -59,9 +59,9 @@
 
 - [ ] **QUERY-01**: Analyst can ask which airports in a region are the strongest expansion candidates and receive a ranked list with scores
 - [ ] **QUERY-02**: Analyst can compare two named airports on a single KPI and see both values and the difference
-- [ ] **QUERY-03**: Analyst can ask for the share of long-haul flights from an airport, computed by great-circle distance against a stated, cited threshold
-- [ ] **QUERY-04**: Analyst can ask why an airport has unmet demand and receive an explanation naming the airport-specific physical cause, not a generic high-utilization statement — derived from runway geometry (parallel-runway separation from FAA ArcGIS) cross-referenced with observed delay conditions. The project asks "and why?"; an answer that does not explain *why this airport* has not answered it.
-- [ ] **QUERY-05**: Every answer states the assumptions behind it, the data window used, and what is measured versus proxied
+- [x] **QUERY-03**: Analyst can ask for the share of long-haul flights from an airport, computed by great-circle distance against a stated, cited threshold
+- [x] **QUERY-04**: Analyst can ask why an airport has unmet demand and receive an explanation naming the airport-specific physical cause, not a generic high-utilization statement — derived from runway geometry (parallel-runway separation from FAA ArcGIS) cross-referenced with observed delay conditions. The project asks "and why?"; an answer that does not explain *why this airport* has not answered it.
+- [x] **QUERY-05**: Every answer states the assumptions behind it, the data window used, and what is measured versus proxied
 
 ### Chat Interface
 

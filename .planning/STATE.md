@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 04
-current_phase_name: Conversational Agent
+current_phase_name: conversational-agent
 status: executing
-stopped_at: Phase 4 gaps found (04-VERIFICATION.md) - user deferred gap closure
-last_updated: "2026-08-20T08:50:58.255Z"
-last_activity: 2026-08-19
-last_activity_desc: Closed Phase 3 bookkeeping gap in ROADMAP.md/STATE.md
+stopped_at: Completed 04-02-PLAN.md - gap closure (QUERY-03/04/05)
+last_updated: "2026-08-20T11:34:14.414Z"
+last_activity: 2026-08-20
+last_activity_desc: Completed 04-02-PLAN.md (gap closure - QUERY-03/QUERY-04/QUERY-05)
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 12
-  completed_plans: 10
-  percent: 60
+  completed_phases: 4
+  total_plans: 13
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-12)
 
 **Core value:** Every number the agent states must be traceable to a deterministic computation over real data, with its assumptions and uncertainty stated out loud.
-**Current focus:** Phase 04 — Conversational Agent (gaps found, closure deferred by explicit user direction)
+**Current focus:** Phase 04 — conversational-agent (complete; Phase 05 not yet started)
 
 ## Current Position
 
-Phase: 04 (Conversational Agent) — EXECUTING, gaps found
-Status: Phase 3 marked complete (bookkeeping only - code was already done); Phase 4 has real, documented gaps (see 04-VERIFICATION.md) that the user has deferred fixing for now
-Last activity: 2026-08-19 - Closed Phase 3 bookkeeping gap in ROADMAP.md/STATE.md
+Phase: 04 (conversational-agent) — COMPLETE (2/2 plans)
+Status: Plan 04-02 (gap closure) executed - QUERY-03/QUERY-04/QUERY-05 closed
+Last activity: 2026-08-20 — Completed 04-02-PLAN.md
 
-Progress: [██████░░░░] 60%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██████░░░░] 60%
 | Phase 01 P01 | 45min | 3 tasks | 9 files |
 | Phase 01 P02 | 40min | 2 tasks | 6 files |
 | Phase 01-foundation-configuration-airport-registry-resolution P03 | 45min | 3 tasks | 10 files |
+| Phase 04 P02 | 25min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,9 @@ Recent decisions affecting current work:
 - [Phase 02, developer decision, 2026-08-13]: Explicitly directed to keep `axios` and the split-file adapter structure (opensky.ts/.client.ts/.parser.ts/.aggregator.ts/.types.ts; nasStatus.ts/.client.ts) instead of plans 02-03/02-04's single-file `fetch()`-based spec — "I want to use axios and I want the split files - the code is more clean and clear." Those two plans' literal file-shape acceptance criteria (exact file count, `AbortSignal.timeout` grep) no longer apply; the underlying behavior (3s timeout, no retry, format gate before I/O) is preserved via axios's `timeout` option plus a normalizer that maps axios's `ECONNABORTED` to the `TimeoutError`-named error the shared `toAdapterFailure` helper expects.
 - [Phase Quick 260818-hb0]: Closed IN-01 from 01-REVIEW.md - ChatMessage now carries a stable id (crypto.randomUUID()) and the render list keys on message.id instead of the array index
 - [Phase Quick 260818-ia2]: Closed WR-01 - withCache now single-flights concurrent same-key calls via lru-cache's native fetch(); OpenSkyClient.ensureToken() memoizes its in-flight token request. Task 1 (withCache) was found already implemented but uncommitted with a deviation from its own plan: it dropped the hits/misses counters and getCacheStats() (no remaining caller) rather than preserving them, which also means a producer resolving to bare `undefined` is no longer cached - currently latent since no real withCache caller resolves to undefined. Not restored (out of this pass's approved scope); flagged here for visibility.
+- [Phase 04-02]: No deterministic distance/great-circle/runway-pairing computation added anywhere - flight_destinations and runway_conditions expose raw coordinates/codes only; the LLM makes the distance/separation judgment itself and must label it as its own estimate, per explicit user decision in 04-CONTEXT.md
+- [Phase 04-02]: runwayConditionsTool fetches fetchFaaFacility and fetchNasStatus independently via Promise.all so one source failing does not blank the other's half of the result, matching buildScoringInputs' existing per-source failure-isolation pattern
+- [Phase 04-02]: User declined the plan's proposed new SYSTEM_PROMPT-content test in google.test.ts during Task 3 review; SYSTEM_PROMPT was still exported and extended with all required disclosure language, verified manually by grep instead of an automated assertion
 
 ### Pending Todos
 
@@ -103,7 +107,8 @@ None yet.
 - **[Phase 3, bookkeeping, 2026-08-19]** Marked Phase 3 complete in ROADMAP.md/STATE.md at explicit user direction. The code was already done (03-01's FAA facility adapter, 03-02's expansionScore.ts, both tested and code-reviewed) and actively consumed by Phase 4 - only the tracking artifacts (ROADMAP checkbox, `completed_phases`) were stale, plus 03-01 never got a SUMMARY.md. No code changed. `current_phase` advanced to 04 to match reality (Phase 4 already has substantial work and its own VERIFICATION.md).
 - **[Resolved, 2026-08-19]** src/app/page.tsx had never been committed beyond its Phase 01-01 scaffold; quick task 260818-hb0 committed it in full (feature + IN-01 fix) since git commits are file-granular. The remaining pre-existing uncommitted files (layout.tsx, env.ts, buildScoringInputs.ts, instrumentation.ts, narrator.ts deletion, src/domain/agent/) were reconciled and committed during `/gsd-execute-phase 4` (commits `ba84c46`, `ced0f61`, `b36fe62`, `9ac5f4b`) — this also fixed a genuinely broken HEAD (the previously-committed google.ts imported `@/domain/agent/tools`, which had never been added to git). See `04-SUMMARY.md` for the full account.
 - **[New, 2026-08-19]** `buildScoringInputs.ts`'s `MAX_AIRPORTS_PER_QUERY` quota cap (6 airports/query, guards OpenSky's daily credit budget against unbounded region-query fan-out) was found dropped from an uncommitted edit during Phase 4 reconciliation. Presented to the user with rationale; user chose to leave it unfixed for now. Not restored — needs a decision before wide production use.
-- **[New, 2026-08-19]** A quick grep during Phase 4 reconciliation found no long-haul/great-circle-distance logic anywhere in `src/domain/scoring/` or `src/domain/agent/` — QUERY-03's requirement ("share of long-haul flights ... by great-circle distance against a stated, cited threshold") appears unimplemented. Not independently chased further; left for the phase verifier to confirm and scope.
+- **[Resolved, 2026-08-20]** A quick grep during Phase 4 reconciliation found no long-haul/great-circle-distance logic anywhere in `src/domain/scoring/` or `src/domain/agent/` — QUERY-03's requirement ("share of long-haul flights ... by great-circle distance against a stated, cited threshold") appeared unimplemented. Closed by `04-02-PLAN.md`: no deterministic distance computation was added (explicit user decision, 04-CONTEXT.md); instead `flight_destinations` exposes real destination ICAO codes and SYSTEM_PROMPT requires the LLM to state and disclose its own long-haul threshold/classification as an estimate.
+- [Phase 04-02] A human should do a live chat pass against the running app to confirm the model actually honors the new SYSTEM_PROMPT disclosure instructions (data window, measured-vs-proxied, estimate-provenance labeling) in practice - tracked as 04-02-SUMMARY.md coverage item D4, human_judgment: true.
 
 ### Quick Tasks Completed
 
@@ -130,6 +135,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-18T09:32:28.654Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-deterministic-scoring-engine/03-CONTEXT.md
+Last session: 2026-08-20T11:33:18.729Z
+Stopped at: Completed 04-02-PLAN.md - gap closure (QUERY-03/04/05)
+Resume file: None

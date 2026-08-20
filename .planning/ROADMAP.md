@@ -26,7 +26,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation — Configuration, Airport Registry & Resolution** - App boots only with valid config; a hardcoded lookup table expands known region/metro names to airport codes (scope reduced 2026-08-13 — see Phase Details)
 - [x] **Phase 2: Live Data Adapters & Caching** - OpenSky and FAA NAS status are fetched, cached per-source, and fail in isolation (completed 2026-08-13)
 - [x] **Phase 3: Deterministic Scoring Engine** - The graded core: a pure, zero-I/O, unit-tested Expansion Opportunity Score with visible weights and cargo/passenger separation (completed 2026-08-19)
-- [ ] **Phase 4: Conversational Agent — Chat, Tool-Calling & Analyst Questions** - Analyst asks questions in plain English and gets ranked, explained, narrated answers with follow-up support
+- [x] **Phase 4: Conversational Agent — Chat, Tool-Calling & Analyst Questions** - Analyst asks questions in plain English and gets ranked, explained, narrated answers with follow-up support (completed 2026-08-20)
 - [ ] **Phase 5: Security Hardening, Design Doc & Submission Packaging** - Guardrails verified end-to-end; design doc explains methodology, tradeoffs, and AI usage
 
 ## Phase Details
@@ -136,14 +136,14 @@ Plans:
   4. Given a region, two named airports, or one named airport, the analyst gets: a ranked list with scores; a side-by-side single-KPI comparison with the difference; the long-haul flight share computed by great-circle distance against a stated, cited threshold; or an airport-specific unmet-demand explanation naming the physical cause via runway separation cross-referenced with delay conditions — and every answer states its assumptions, the data window used, and what is measured versus proxied.
   5. The chat transport sits behind an adapter interface with a single text implementation, and text drawn from third-party API responses is treated as untrusted data inside the LLM context, never as instructions.
 
-**Plans**: 2 plans (04-PLAN.md — original tracer, unstructured; 04-02-PLAN.md — gap closure)
+**Plans**: 2/2 plans complete
 **UI hint**: yes
 
 Plans:
 **Wave 1**
 
 - [x] 04-PLAN.md — Original tracer: chat transport, Gemini native tool-calling (resolve_region, score_airports), session memory, rate limiting (unstructured, predates GSD plan format; see 04-SUMMARY.md)
-- [ ] 04-02-PLAN.md — Gap closure (04-VERIFICATION.md): flight_destinations + runway_conditions tools, OpenSky data-window/proxy threading, SYSTEM_PROMPT disclosure requirements (QUERY-03, QUERY-04, QUERY-05)
+- [x] 04-02-PLAN.md — Gap closure (04-VERIFICATION.md): flight_destinations + runway_conditions tools, OpenSky data-window/proxy threading, SYSTEM_PROMPT disclosure requirements (QUERY-03, QUERY-04, QUERY-05)
 
 ### Phase 5: Security Hardening, Design Doc & Submission Packaging
 
@@ -168,5 +168,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation — Configuration, Airport Registry & Resolution | 4/4 | Complete (scope reduced 2026-08-13) | 2026-08-13 |
 | 2. Live Data Adapters & Caching | 5/5 | Complete    | 2026-08-13 |
 | 3. Deterministic Scoring Engine | 2/2 | Complete | 2026-08-19 |
-| 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 0/TBD | Not started | - |
+| 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 2/2 | Complete   | 2026-08-20 |
 | 5. Security Hardening, Design Doc & Submission Packaging | 0/TBD | Not started | - |
