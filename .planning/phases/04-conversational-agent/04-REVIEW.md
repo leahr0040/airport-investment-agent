@@ -17,10 +17,10 @@ files_reviewed_list:
   - src/instrumentation.ts
   - src/lib/rateLimiter.ts
 findings:
-  critical: 2
+  critical: 0
   warning: 3
   info: 2
-  total: 7
+  total: 5
 status: issues_found
 ---
 
@@ -33,34 +33,21 @@ status: issues_found
 
 ## Summary
 
-Reviewed the conversational-agent phase's LLM adapter, chat API route, tool-dispatch layer, and the deterministic scoring engine. The scoring engine (`expansionScore.ts`, `buildScoringInputs.ts`) is well-structured and matches its test suite. The most severe problems are in the request/session boundary: `src/app/api/chat/route.ts` — the one file that actually receives untrusted traffic — never calls the rate-limiting or session-identity middleware that the codebase already built and tested for exactly this purpose (`src/lib/middleware/sessionRateLimitCheck.ts`, `src/lib/middleware/ipRateLimitCheck.ts`, backed by `src/lib/rateLimiter.ts`). CLAUDE.md explicitly marks per-session rate limiting on the chat endpoint as "not deferrable polish," and it is currently not enforced at all in the live route. Session identity is also entirely client-supplied and unauthenticated, which lets one client attach to another's conversation. Additional validation and error-handling gaps compound the cost/abuse exposure of the missing rate limit.
+Reviewed the conversational-agent phase's LLM adapter, chat API route, tool-dispatch layer, and the deterministic scoring engine. The scoring engine (`expansionScore.ts`, `buildScoringInputs.ts`) is well-structured and matches its test suite. Both originally-reported Critical findings have since been resolved or corrected — see below. Remaining findings are quality/robustness warnings (empty-body validation hole, unhandled tool-call exceptions, no `icaos` array cap) and two Info-level notes; none are security-blocking.
 
-## Critical Issues
+## Critical Issues (resolved)
 
-### CR-01: Chat endpoint has no rate limiting despite fully-built, tested middleware existing unused
+### CR-01: ~~Chat endpoint has no rate limiting~~ — FALSE POSITIVE, corrected 2026-08-20
 
 **File:** `src/app/api/chat/route.ts:1-23`
-**Issue:** The codebase contains complete, unit-tested rate-limiting middleware — `src/lib/middleware/sessionRateLimitCheck.ts` (per-session, via `checkRateLimit`) and `src/lib/middleware/ipRateLimitCheck.ts` (per-IP backstop, via `checkIpRateLimit`), both backed by `src/lib/rateLimiter.ts`. Neither is imported or called anywhere in `route.ts`, the only file that handles `POST /api/chat`. Every request — regardless of session id or IP — reaches `runAgent`, which invokes the billed Gemini API and fans out to 2-3 upstream adapters per tool call, with zero throttling. This directly contradicts CLAUDE.md: "rate-limit the chat endpoint per session... These are not deferrable polish." Confirmed via grep: `checkRateLimit`/`checkIpRateLimit` are only referenced from the middleware files and their tests, never from `route.ts`.
-**Fix:**
-```ts
-import { sessionRateLimitCheck } from '@/lib/middleware/sessionRateLimitCheck';
-import { ipRateLimitCheck } from '@/lib/middleware/ipRateLimitCheck';
+**Original claim:** The quick-depth reviewer grepped for direct call-sites of `checkRateLimit`/`checkIpRateLimit` inside `route.ts`, found none, and concluded rate limiting was unenforced.
+**Correction:** This missed `src/proxy.ts` — Next.js 16's file-convention replacement for `middleware.ts` (renamed from `middleware.ts` in commit `1829d96`). `proxy.ts` exports `proxy(req)` with `config.matcher: '/api/chat'`, so Next.js invokes it automatically on every request to that route *before* `route.ts` runs, with no import required in `route.ts` itself. It already calls both `ipRateLimitCheck` and `sessionRateLimitCheck` (wired in by an earlier quick task, `260819-uzg`). Both rate limiters are, and were, enforced. No code change needed.
 
-export async function POST(req: NextRequest) {
-  const ipBlocked = await ipRateLimitCheck(req);
-  if (ipBlocked) return ipBlocked;
-  const sessionBlocked = await sessionRateLimitCheck(req);
-  if (sessionBlocked) return sessionBlocked;
-  // ...existing handler body
-}
-```
-Note: the middleware functions type their parameter as `NextRequest`; `route.ts` currently types its handler parameter as the plain `Request`, so the handler signature needs to change too (or the middleware needs to accept the narrower `Request`/`Headers` shape it actually uses).
+### CR-02: Unauthenticated, client-supplied session id allows cross-user chat session hijack — FIXED 2026-08-20
 
-### CR-02: Unauthenticated, client-supplied session id allows cross-user chat session hijack
-
-**File:** `src/app/api/chat/route.ts:16`
-**Issue:** `const session = req.headers.get('x-session-id') ?? req.headers.get('x-forwarded-for') ?? 'anon';` — this value is used directly as the key into `sessionStore`'s in-memory `Map<string, {chat, expiresAt}>` (`src/adapters/llm/sessionStore.ts:10-19`), with no signature, cookie, or ownership check of any kind. Any caller can set `x-session-id` to a value they observed or guessed (e.g. copied from a browser devtools request, a shared log, or simply reused) and thereby read and continue another user's active conversation — including whatever context/history Gemini has accumulated for that session. Callers that omit the header entirely fall back to the spoofable `x-forwarded-for`, or to the literal string `'anon'` shared by every such caller, meaning multiple unrelated anonymous users can be silently merged into one shared conversation. The current frontend (`page.tsx`) does generate a random UUID per browser tab, but the API itself enforces no identity guarantee — any non-browser client (curl, another consumer of this endpoint, or a browser tab that strips custom headers) is exposed.
-**Fix:** Treat the session id as an opaque bearer credential minted and signed server-side (e.g. an HttpOnly cookie set on first response, or a server-issued token the client must echo back), not as a client-chosen string. At minimum, reject requests whose `x-session-id` doesn't match an expected format/length and stop falling back to `x-forwarded-for` for conversation identity (it's fine as a *rate-limit* backstop key, as already intended in `ipRateLimitCheck.ts`, but should not double as chat-history identity).
+**File:** `src/app/api/chat/route.ts:16` (originally); fix landed in `src/proxy.ts`
+**Issue:** `const session = req.headers.get('x-session-id') ?? req.headers.get('x-forwarded-for') ?? 'anon';` — this value was used directly as the key into `sessionStore`'s in-memory `Map<string, {chat, expiresAt}>` (`src/adapters/llm/sessionStore.ts:10-19`), with no signature, cookie, or ownership check of any kind. Any caller could set `x-session-id` to a value they observed or guessed and thereby read/continue another user's active conversation; callers that omitted the header fell back to the spoofable `x-forwarded-for` or the literal `'anon'`, silently merging unrelated anonymous users onto one shared conversation.
+**Fix (quick task `260820-lx1`, commits `33b36d5`, `f8e9941`):** `proxy.ts` now validates `x-session-id` as a strict UUID via Zod's `z.uuid()` immediately after the IP rate-limit check and before the session rate-limit check, returning `400 invalid_session_id` for anything missing or malformed — no generated fallback is substituted. `sessionRateLimitCheck.ts` and `route.ts` dropped their independent `x-forwarded-for`/`'anon'` fallback chains, since `proxy.ts`'s `config.matcher: '/api/chat'` guarantees a valid header by the time either runs. Verified: 121/121 tests pass, `tsc --noEmit` clean.
 
 ## Warnings
 
