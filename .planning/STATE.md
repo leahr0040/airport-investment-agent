@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04
-current_phase_name: conversational-agent
-status: executing
+current_phase: 5
+current_phase_name: Security Hardening, Design Doc & Submission Packaging
+status: Plan 04-02 (gap closure) executed - QUERY-03/QUERY-04/QUERY-05 closed
 stopped_at: Completed quick task 260820-mgm - extracted sessionIdValidationCheck middleware from proxy.ts
-last_updated: "2026-08-20T13:15:55.952Z"
-last_activity: 2026-08-20
-last_activity_desc: Completed quick task 260820-mgm (extract sessionIdValidationCheck middleware)
+last_updated: "2026-08-23T13:14:55.017Z"
+last_activity: 2026-08-23
+last_activity_desc: Phase 04 complete, transitioned to Phase 5
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 3
   total_plans: 13
   completed_plans: 12
-  percent: 92
+  percent: 60
 ---
 
 # Project State
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-08-12)
 
 ## Current Position
 
-Phase: 04 (conversational-agent) — COMPLETE (2/2 plans)
+Phase: 5 — Security Hardening, Design Doc & Submission Packaging
 Status: Plan 04-02 (gap closure) executed - QUERY-03/QUERY-04/QUERY-05 closed
-Last activity: 2026-08-20 — Completed 04-02-PLAN.md
+Last activity: 2026-08-23 — Phase 04 complete, transitioned to Phase 5
 
 Progress: [█████████░] 92%
 
@@ -38,7 +38,7 @@ Progress: [█████████░] 92%
 
 **Velocity:**
 
-- Total plans completed: 5
+- Total plans completed: 7
 - Average duration: N/A
 - Total execution time: 0 hours
 
@@ -47,6 +47,7 @@ Progress: [█████████░] 92%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 02 | 5 | - | - |
+| 04 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -111,6 +112,8 @@ None yet.
 - **[New, 2026-08-19]** `buildScoringInputs.ts`'s `MAX_AIRPORTS_PER_QUERY` quota cap (6 airports/query, guards OpenSky's daily credit budget against unbounded region-query fan-out) was found dropped from an uncommitted edit during Phase 4 reconciliation. Presented to the user with rationale; user chose to leave it unfixed for now. Not restored — needs a decision before wide production use.
 - **[Resolved, 2026-08-20]** A quick grep during Phase 4 reconciliation found no long-haul/great-circle-distance logic anywhere in `src/domain/scoring/` or `src/domain/agent/` — QUERY-03's requirement ("share of long-haul flights ... by great-circle distance against a stated, cited threshold") appeared unimplemented. Closed by `04-02-PLAN.md`: no deterministic distance computation was added (explicit user decision, 04-CONTEXT.md); instead `flight_destinations` exposes real destination ICAO codes and SYSTEM_PROMPT requires the LLM to state and disclose its own long-haul threshold/classification as an estimate.
 - [Phase 04-02] A human should do a live chat pass against the running app to confirm the model actually honors the new SYSTEM_PROMPT disclosure instructions (data window, measured-vs-proxied, estimate-provenance labeling) in practice - tracked as 04-02-SUMMARY.md coverage item D4, human_judgment: true.
+- **[New, 2026-08-23]** UAT for Phase 4 was independently re-run live against the running dev server (not just user self-report): QUERY-01 (ranked list) confirmed. QUERY-02 (KPI comparison) returned both values plus a ratio ("1.8 times") but never the plain subtractive numeric difference the test wording asked for — accepted as-is per user direction, not fixed. CHAT-03 (follow-up resolution) could not be independently re-verified in this session: the configured Gemini model's free-tier daily quota (20 requests/day) was exhausted by testing before the follow-up turn could be sent. Phase was marked complete anyway per explicit user direction, trusting the earlier manual UAT pass.
+- **[New, 2026-08-23]** Gemini free-tier quota is capped at 20 requests/day for the configured model (confirmed via live 429 `RESOURCE_EXHAUSTED` response, `GenerateRequestsPerDayPerProjectPerModel-FreeTier`) — a real constraint for a reviewer doing repeated live testing in one session. Worth a line in the design doc (Phase 5, DOC-01) about this limitation and its workaround (wait for daily reset, or swap in a paid/alternate key).
 
 ### Quick Tasks Completed
 
