@@ -4,13 +4,14 @@ import { nasStatusClient } from './nasStatus.client';
 import type { AdapterResult } from './types';
 import { isValidIcao, isValidIata } from './validate';
 import { toAdapterFailure } from './errors';
+import { FailReason } from './types';
 
 export type NasStatusEvent = {
   type: string;
   reason: string | null;
   start: string | null;
   reopen: string | null;
-  raw: Record<string, string>;
+  raw: Record<string, unknown>;
 };
 
 export type NasStatus = {
@@ -32,43 +33,23 @@ export function toFaaLid(icao: string): string {
 }
 
 function findMatchingEntries(node: unknown, lid: string): Record<string, unknown>[] {
-  const matches: Record<string, unknown>[] = [];
+  if (Array.isArray(node)) return node.flatMap((child) => findMatchingEntries(child, lid));
+  if (!node || typeof node !== 'object') return [];
 
-  function walk(value: unknown): void {
-    if (Array.isArray(value)) {
-      value.forEach(walk);
-      return;
-    }
-    if (value && typeof value === 'object') {
-      const obj = value as Record<string, unknown>;
-      const arpt = obj.ARPT;
-      if (typeof arpt === 'string' && arpt.trim().toUpperCase() === lid) {
-        matches.push(obj);
-      }
-      for (const key of Object.keys(obj)) {
-        walk(obj[key]);
-      }
-    }
-  }
+  const obj = node as Record<string, unknown>;
+  const arpt = obj.ARPT;
+  const self = typeof arpt === 'string' && arpt.trim().toUpperCase() === lid ? [obj] : [];
 
-  walk(node);
-  return matches;
+  return [...self, ...Object.values(obj).flatMap((child) => findMatchingEntries(child, lid))];
 }
 
-function toRawBag(entry: Record<string, unknown>, exclude: readonly string[]): Record<string, string> {
-  const raw: Record<string, string> = {};
-  for (const [key, value] of Object.entries(entry)) {
-    if (exclude.includes(key)) continue;
-    if (typeof value === 'string') raw[key] = value;
-  }
-  return raw;
-}
+const FIELDS_WITH_TYPED_PROPERTIES = ['ARPT', 'Reason', 'Start', 'Reopen'];
 
 export async function fetchNasStatus(icao: string): Promise<AdapterResult<NasStatus>> {
-  if (!isValidIcao(icao)) return { ok: false, reason: 'invalid_input' };
+  if (!isValidIcao(icao)) return { ok: false, reason: FailReason.InvalidInput };
 
   const lid = toFaaLid(icao);
-  if (!isValidIata(lid)) return { ok: false, reason: 'invalid_input' };
+  if (!isValidIata(lid)) return { ok: false, reason: FailReason.InvalidInput };
 
   try {
     const feedXml = await nasStatusClient.fetchCachedFeed();
@@ -78,21 +59,21 @@ export async function fetchNasStatus(icao: string): Promise<AdapterResult<NasSta
 
     const delayTypeBlocks = ensureArray(root.Delay_type as Record<string, unknown> | Record<string, unknown>[] | undefined);
 
-    const events: NasStatusEvent[] = [];
-    for (const block of delayTypeBlocks) {
-      if (!block || typeof block !== 'object') continue;
-      const typeName = typeof block.Name === 'string' ? block.Name : 'Unknown';
+    const events: NasStatusEvent[] = delayTypeBlocks
+      .filter((block) => block && typeof block === 'object')
+      .flatMap((block) => {
+        const typeName = typeof block.Name === 'string' ? block.Name : 'Unknown';
 
-      for (const entry of findMatchingEntries(block, lid)) {
-        events.push({
+        return findMatchingEntries(block, lid).map((entry) => ({
           type: typeName,
           reason: typeof entry.Reason === 'string' ? entry.Reason : null,
           start: typeof entry.Start === 'string' ? entry.Start : null,
           reopen: typeof entry.Reopen === 'string' ? entry.Reopen : null,
-          raw: toRawBag(entry, ['ARPT', 'Reason', 'Start', 'Reopen']),
-        });
-      }
-    }
+          raw: Object.fromEntries(
+            Object.entries(entry).filter(([fieldName]) => !FIELDS_WITH_TYPED_PROPERTIES.includes(fieldName)),
+          ),
+        }));
+      });
 
     const result: NasStatus = { lid, icao, updateTime, events };
     return { ok: true, data: result, fetchedAt: new Date().toISOString(), source: 'faa-nas-status' };
