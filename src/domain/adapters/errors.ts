@@ -16,6 +16,16 @@ function withSource(detail: string, source?: string): string {
   return source ? `${source}: ${detail}` : detail;
 }
 
+export function toNetworkError(err: unknown): AdapterError {
+  const code = (err as { code?: unknown } | null)?.code;
+  return new AdapterError(
+    typeof code === "string" && code ? code : "NetworkError",
+    FailureKind.Unavailable,
+    null,
+    err instanceof Error ? err : null,
+  );
+}
+
 function classify(err: unknown, source?: string): Extract<AdapterResult<never>, { ok: false }> {
   if (!(err instanceof Error)) {
     return { ok: false, kind: FailureKind.Unavailable, detail: withSource("UnknownError", source) };

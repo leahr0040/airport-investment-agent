@@ -83,12 +83,15 @@ describe('FaaFacilityClient', () => {
     await expect(client.fetchRunwayRows('ATL')).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
-  it('normalizes a real axios ECONNABORTED timeout to a TimeoutError-named error', async () => {
+  it('wraps a transport failure in an AdapterError named after its code', async () => {
     const mockHttp = {
       get: vi.fn().mockRejectedValue(Object.assign(new Error('timeout of 3000ms exceeded'), { code: 'ECONNABORTED' })),
     } as unknown as HttpClient;
 
     const client = new FaaFacilityClient(3000, mockHttp);
-    await expect(client.fetchFacilityRows('KATL')).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(client.fetchFacilityRows('KATL')).rejects.toMatchObject({
+      name: 'ECONNABORTED',
+      kind: 'unavailable',
+    });
   });
 });

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { FailureKind, type HttpResponse } from './types';
-import { AdapterError } from './errors';
+import { AdapterError, toNetworkError } from './errors';
 
 export type HttpClient = {
   get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
@@ -13,13 +13,6 @@ export class FaaFacilityClient {
     this.timeoutMs = timeoutMs;
   }
 
-  private normalizeTimeout(err: unknown): unknown {
-    if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
-      return Object.assign(err, { name: 'TimeoutError' });
-    }
-    return err;
-  }
-
   private async queryFeatures(layer: string, where: string, outFields: string): Promise<Record<string, unknown>[]> {
     const ARCGIS_BASE = 'https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services';
     const params = new URLSearchParams({ where, outFields, f: 'json', returnGeometry: 'false' });
@@ -29,7 +22,7 @@ export class FaaFacilityClient {
     try {
       response = await this.http.get(url, { timeout: this.timeoutMs, validateStatus: () => true });
     } catch (err) {
-      throw this.normalizeTimeout(err);
+      throw toNetworkError(err);
     }
 
     if (response.status !== 200) {

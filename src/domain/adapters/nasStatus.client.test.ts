@@ -35,10 +35,13 @@ describe('NasStatusClient', () => {
     await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
-  it('normalizes a real axios ECONNABORTED timeout to a TimeoutError-named error', async () => {
+  it('wraps a transport failure in an AdapterError named after its code', async () => {
     mockedAxios.get.mockRejectedValueOnce(
       Object.assign(new Error('timeout of 3000ms exceeded'), { code: 'ECONNABORTED' }),
     );
-    await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({
+      name: 'ECONNABORTED',
+      kind: 'unavailable',
+    });
   });
 });

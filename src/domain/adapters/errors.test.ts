@@ -1,6 +1,33 @@
 import { describe, expect, it, vi } from "vitest";
-import { AdapterError, toAdapterFailure } from "./errors";
+import { AdapterError, toAdapterFailure, toNetworkError } from "./errors";
 import { FailureKind } from "./types";
+
+describe("toNetworkError", () => {
+  it("carries the transport code through as the failure name", () => {
+    const refused = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:443"), {
+      code: "ECONNREFUSED",
+    });
+
+    expect(toAdapterFailure(toNetworkError(refused), "opensky")).toEqual({
+      ok: false,
+      kind: "unavailable",
+      detail: "opensky: ECONNREFUSED",
+    });
+  });
+
+  it("falls back to NetworkError when the thrown value carries no code", () => {
+    expect(toAdapterFailure(toNetworkError(new Error("socket hang up")))).toEqual({
+      ok: false,
+      kind: "unavailable",
+      detail: "NetworkError",
+    });
+  });
+
+  it("keeps the original error as the cause so the transport stack is not lost", () => {
+    const original = new Error("timeout of 3000ms exceeded");
+    expect(toNetworkError(Object.assign(original, { code: "ECONNABORTED" })).cause).toBe(original);
+  });
+});
 
 describe("toAdapterFailure", () => {
   it("maps a TimeoutError to a safe timeout failure", () => {

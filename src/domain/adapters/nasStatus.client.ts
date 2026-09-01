@@ -1,16 +1,9 @@
 import axios from 'axios';
 import { withCache, NAS_STATUS_TTL_MS } from './cache';
 import { FailureKind, type HttpResponse } from './types';
-import { AdapterError } from './errors';
+import { AdapterError, toNetworkError } from './errors';
 
 const NAS_FEED_URL = 'https://nasstatus.faa.gov/api/airport-status-information';
-
-function normalizeTimeout(err: unknown): unknown {
-  if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
-    return Object.assign(err, { name: 'TimeoutError' });
-  }
-  return err;
-}
 
 type HttpClient = {
   get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
@@ -28,7 +21,7 @@ export class NasStatusClient {
       try {
         response = await this.http.get(NAS_FEED_URL, { timeout: this.timeoutMs, validateStatus: () => true });
       } catch (err) {
-        throw normalizeTimeout(err);
+        throw toNetworkError(err);
       }
 
       if (response.status !== 200) {

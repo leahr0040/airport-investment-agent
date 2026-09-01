@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getEnv } from '@/config/env';
 import { FailureKind, type HttpResponse } from './types';
-import { AdapterError } from './errors';
+import { AdapterError, toNetworkError } from './errors';
 
 const TOKEN_ENDPOINT = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
 const FLIGHTS_BASE = 'https://opensky-network.org/api';
@@ -46,7 +46,7 @@ export class OpenSkyClient {
         validateStatus: () => true,
       });
     } catch (err) {
-      throw this.normalizeTimeout(err);
+      throw toNetworkError(err);
     }
 
     if (response.status !== 200) {
@@ -66,13 +66,6 @@ export class OpenSkyClient {
       });
     }
     return { access_token: responseBody.access_token, expires_in: Number(responseBody.expires_in) };
-  }
-
-  private normalizeTimeout(err: unknown): unknown {
-    if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
-      return Object.assign(err, { name: 'TimeoutError' });
-    }
-    return err;
   }
 
   async ensureToken(): Promise<string> {
@@ -109,7 +102,7 @@ export class OpenSkyClient {
         validateStatus: () => true,
       });
     } catch (err) {
-      throw this.normalizeTimeout(err);
+      throw toNetworkError(err);
     }
 
     // OpenSky returns 404, not an empty 200, when no flights exist for the period.
