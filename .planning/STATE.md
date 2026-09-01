@@ -129,7 +129,7 @@ None yet.
 | 260820-kvr | Rename src/middleware.ts to src/proxy.ts for the Next.js 16 Proxy file convention (dropped invalid runtime config key, no behavior change) | 2026-08-20 | 1829d96 | [260820-kvr-rename-src-middleware-ts-to-src-proxy-ts](./quick/260820-kvr-rename-src-middleware-ts-to-src-proxy-ts/) |
 | 260820-lx1 | Fix CR-02 from 04-REVIEW.md: proxy.ts validates x-session-id as a strict UUID before sessionRateLimitCheck.ts/route.ts run; both drop their spoofable x-forwarded-for/'anon' fallback chains | 2026-08-20 | 33b36d5, f8e9941 | [260820-lx1-fix-cr-02-session-id-hijack-validate-x-s](./quick/260820-lx1-fix-cr-02-session-id-hijack-validate-x-s/) |
 | 260820-mgm | Extract sessionIdValidationCheck.ts from proxy.ts's inline z.uuid() check, matching the ipRateLimitCheck/sessionRateLimitCheck one-function-per-file pattern | 2026-08-20 | e86275e, 0e32259 | [260820-mgm-extract-x-session-id-uuid-validation-fro](./quick/260820-mgm-extract-x-session-id-uuid-validation-fro/) |
-| 260901-g0s | An empty OpenSky window is a measured zero, not a failure — a zero-traffic airport now keeps all three scoring components and ranks last instead of scoring 50 | 2026-09-01 | uncommitted | [260901-g0s-opensky-empty-result-is-a-measured-zero-](./quick/260901-g0s-opensky-empty-result-is-a-measured-zero-/) |
+| 260901-g0s | An empty OpenSky window is a measured zero, not a failure — a zero-traffic airport now keeps all three scoring components and ranks last instead of scoring 50 | 2026-09-01 | 3b481c3 | [260901-g0s-opensky-empty-result-is-a-measured-zero-](./quick/260901-g0s-opensky-empty-result-is-a-measured-zero-/) |
 
 ## Deferred Items
 
