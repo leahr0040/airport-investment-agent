@@ -31,14 +31,14 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
   });
 
   it('rejects a lowercase code before calling axios', async () => {
-    await expect(fetchMovements('katl')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
+    await expect(fetchMovements('katl')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
     expect(mockedAxios.post).toHaveBeenCalledTimes(0);
     expect(mockedAxios.get).toHaveBeenCalledTimes(0);
   });
 
   it('rejects a 3-letter IATA code and an empty string the same way', async () => {
-    await expect(fetchMovements('ATL')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
-    await expect(fetchMovements('')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
+    await expect(fetchMovements('ATL')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
+    await expect(fetchMovements('')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
     expect(mockedAxios.post).toHaveBeenCalledTimes(0);
     expect(mockedAxios.get).toHaveBeenCalledTimes(0);
   });
@@ -136,7 +136,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     mockedAxios.get.mockRejectedValueOnce(econnaborted());
 
     const res = await fetchMovements('KATL');
-    expect(res).toMatchObject({ ok: false, reason: 'timeout' });
+    expect(res).toMatchObject({ ok: false, kind: 'unavailable' });
   });
 
   it('maps 429 to rate_limited', async () => {
@@ -144,7 +144,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(429, {}));
 
     const res = await fetchMovements('KATL');
-    expect(res).toMatchObject({ ok: false, reason: 'rate_limited' });
+    expect(res).toMatchObject({ ok: false, kind: 'unavailable' });
   });
 
   it('clears the token on 401 and re-authenticates on the next call', async () => {
@@ -153,7 +153,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     mockedAxios.get.mockResolvedValue(axiosResponse(200, [{ callsign: 'A' }]));
 
     const first = await fetchMovements('KATL');
-    expect(first).toMatchObject({ ok: false, reason: 'error' });
+    expect(first).toMatchObject({ ok: false, kind: 'unavailable' });
 
     clearCache();
     await fetchMovements('KATL');
@@ -161,13 +161,15 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     expect(mockedAxios.post).toHaveBeenCalledTimes(2);
   });
 
-  it('empty window (both legs 404) returns no_data', async () => {
+  it('reports an airport with no flights in the window as a measured zero, not a failure', async () => {
     mockedAxios.post.mockResolvedValueOnce(axiosResponse(200, TOKEN_BODY));
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(404, {}));
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(404, {}));
 
-    const res = await fetchMovements('KATL');
-    expect(res).toMatchObject({ ok: false, reason: 'no_data' });
+    const result = await fetchMovements('KATL');
+    if (!result.ok) throw new Error('expected ok result');
+    expect(result.data.departureCount).toBe(0);
+    expect(result.data.arrivalCount).toBe(0);
   });
 
   it('treats a single 404 leg as a legitimate zero, not a failure', async () => {

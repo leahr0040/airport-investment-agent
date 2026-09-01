@@ -1,9 +1,14 @@
-export type AdapterFailReason =
-  | "timeout"
-  | "invalid_input"
-  | "rate_limited"
-  | "no_data"
-  | "error";
+export type HttpResponse = {
+  status: number;
+  data: unknown;
+  request?: { method?: string; path?: string };
+};
+
+export enum FailureKind {
+  NoData = "no_data",
+  InvalidInput = "invalid_input",
+  Unavailable = "unavailable",
+}
 
 export type AdapterResult<T> =
   | {
@@ -14,7 +19,6 @@ export type AdapterResult<T> =
     }
   | {
       ok: false;
-      reason: AdapterFailReason;
+      kind: FailureKind;
       detail?: string;
     };
-

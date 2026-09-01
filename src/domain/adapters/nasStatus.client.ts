@@ -1,20 +1,26 @@
 import axios from 'axios';
 import { withCache, NAS_STATUS_TTL_MS } from './cache';
+import { FailureKind, type HttpResponse } from './types';
+import { AdapterError } from './errors';
 
 const NAS_FEED_URL = 'https://nasstatus.faa.gov/api/airport-status-information';
 
 function normalizeTimeout(err: unknown): unknown {
   if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
-    return Object.assign(new Error('TimeoutError'), { name: 'TimeoutError' });
+    return Object.assign(err, { name: 'TimeoutError' });
   }
   return err;
 }
+
+type HttpClient = {
+  get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
+};
 
 export class NasStatusClient {
   private readonly cacheKey = 'nas:feed';
   private readonly timeoutMs = 3000;
 
-  constructor(private readonly http = axios) {}
+  constructor(private readonly http: HttpClient = axios as unknown as HttpClient) {}
 
   async fetchCachedFeed(): Promise<string> {
     return await withCache(this.cacheKey, NAS_STATUS_TTL_MS, async () => {
@@ -25,13 +31,13 @@ export class NasStatusClient {
         throw normalizeTimeout(err);
       }
 
-      if (response.status === 429) {
-        const e: Error & { reason: string } = Object.assign(new Error('rate_limited'), { reason: 'rate_limited' });
-        throw e;
-      }
       if (response.status !== 200) {
-        const e: Error & { reason: string } = Object.assign(new Error('FeedFetchFailed'), { reason: 'error' });
-        throw e;
+        throw new AdapterError('UpstreamError', FailureKind.Unavailable, {
+          method: response.request?.method,
+          path: response.request?.path,
+          status: response.status,
+          data: response.data,
+        });
       }
       return response.data as string;
     });

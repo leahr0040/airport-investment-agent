@@ -6,7 +6,7 @@ import type { Movements } from '@/domain/adapters/opensky.types';
 import { fetchFaaFacility, type RunwayGeometry } from '@/domain/adapters/faaFacility';
 import { fetchNasStatus, type NasStatusEvent } from '@/domain/adapters/nasStatus';
 import { isValidIcao } from '@/domain/adapters/validate';
-import type { AdapterFailReason } from '@/domain/adapters/types';
+import { FailureKind } from '@/domain/adapters/types';
 
 export const TOOL_DECLARATIONS = [
   {
@@ -74,7 +74,7 @@ export type FlightDestinationsResult =
       unknownDestinationCount: number;
       totalDepartures: number;
     }
-  | { icao: string; available: false; reason: AdapterFailReason };
+  | { icao: string; available: false; kind: FailureKind };
 
 export async function flightDestinationsTool(args: { icaos: string[] }): Promise<{ results: FlightDestinationsResult[] }> {
   const icaos = uniqueIcaos(args.icaos);
@@ -82,7 +82,7 @@ export async function flightDestinationsTool(args: { icaos: string[] }): Promise
   const results = await Promise.all(
     icaos.map(async (icao): Promise<FlightDestinationsResult> => {
       const movements = await fetchMovements(icao);
-      if (!movements.ok) return { icao, available: false, reason: movements.reason };
+      if (!movements.ok) return { icao, available: false, kind: movements.kind };
 
       const destinations = movements.data.departures
         .map((d) => d.estArrivalAirport)
@@ -133,9 +133,9 @@ function toDelayEventSummary(e: NasStatusEvent): DelayEventSummary {
 export type RunwayConditionsResult = {
   icao: string;
   runways: RunwayGeometry[] | null;
-  runwaysReason: AdapterFailReason | null;
+  runwaysKind: FailureKind | null;
   delayEvents: DelayEventSummary[] | null;
-  delayEventsReason: AdapterFailReason | null;
+  delayEventsKind: FailureKind | null;
 };
 
 export async function runwayConditionsTool(args: { icaos: string[] }): Promise<{ results: RunwayConditionsResult[] }> {
@@ -148,9 +148,9 @@ export async function runwayConditionsTool(args: { icaos: string[] }): Promise<{
       return {
         icao,
         runways: facility.ok ? facility.data.runways : null,
-        runwaysReason: facility.ok ? null : facility.reason,
+        runwaysKind: facility.ok ? null : facility.kind,
         delayEvents: nasStatus.ok ? nasStatus.data.events.map(toDelayEventSummary) : null,
-        delayEventsReason: nasStatus.ok ? null : nasStatus.reason,
+        delayEventsKind: nasStatus.ok ? null : nasStatus.kind,
       };
     }),
   );

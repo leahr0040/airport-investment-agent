@@ -71,7 +71,7 @@ describe('FaaFacilityClient', () => {
     } as unknown as HttpClient;
 
     const client = new FaaFacilityClient(3000, mockHttp);
-    await expect(client.fetchFacilityRows('KATL')).rejects.toMatchObject({ reason: 'error' });
+    await expect(client.fetchFacilityRows('KATL')).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
   it('rejects with reason rate_limited on HTTP 429', async () => {
@@ -80,7 +80,7 @@ describe('FaaFacilityClient', () => {
     } as unknown as HttpClient;
 
     const client = new FaaFacilityClient(3000, mockHttp);
-    await expect(client.fetchRunwayRows('ATL')).rejects.toMatchObject({ reason: 'rate_limited' });
+    await expect(client.fetchRunwayRows('ATL')).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
   it('normalizes a real axios ECONNABORTED timeout to a TimeoutError-named error', async () => {

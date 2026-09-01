@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Movements } from '../adapters/opensky.types';
 import type { FaaFacility } from '../adapters/faaFacility';
 import type { NasStatus } from '../adapters/nasStatus';
-import type { AdapterResult } from '../adapters/types';
+import { FailureKind, type AdapterResult } from '../adapters/types';
 
 import {
   scoreAirports,
@@ -69,8 +69,8 @@ function ok<T>(data: T, source = 'test'): AdapterResult<T> {
   return { ok: true, data, fetchedAt: '2026-01-01T00:00:00.000Z', source };
 }
 
-function fail<T>(reason: string): AdapterResult<T> {
-  return { ok: false, reason: reason as any };
+function fail<T>(kind: FailureKind): AdapterResult<T> {
+  return { ok: false, kind };
 }
 
 describe('expansionScore', () => {
@@ -138,20 +138,20 @@ describe('expansionScore', () => {
       icao: 'P',
       movements: ok(movementsWithCallsigns([ ...Array(30).fill('UAL1') ])),
       facility: ok(facilityWithRunways(1)),
-      nasStatus: fail('timeout') as any,
+      nasStatus: fail<NasStatus>(FailureKind.Unavailable),
     };
 
     const Q = {
       icao: 'Q',
       movements: ok(movementsWithCallsigns([ ...Array(90).fill('UAL2') ])),
       facility: ok(facilityWithRunways(1)),
-      nasStatus: fail('timeout') as any,
+      nasStatus: fail<NasStatus>(FailureKind.Unavailable),
     };
 
     const results = scoreAirports([P, Q]);
     results.forEach((r) => {
       expect(r.components.delayFrequency.available).toBe(false);
-      expect((r.components.delayFrequency as any).reason).toBe('timeout');
+      expect((r.components.delayFrequency as any).kind).toBe('unavailable');
       expect(r.components.delayFrequency.normalized).toBeNull();
       expect(r.components.delayFrequency.contribution).toBeNull();
       expect(r.components.weightPerComponent).toBeCloseTo(0.5, 6);
@@ -168,7 +168,7 @@ describe('expansionScore', () => {
     const R = {
       icao: 'R',
       movements: ok(movementsWithCallsigns([ ...Array(40).fill('UALX') ])),
-      facility: fail('no_data') as any,
+      facility: fail<FaaFacility>(FailureKind.NoData),
       nasStatus: ok(nasStatusWithEvents(2)),
     };
 
@@ -184,7 +184,7 @@ describe('expansionScore', () => {
     const s = results.find((x) => x.icao === 'S')!;
 
     expect(r.components.headroom.available).toBe(false);
-    expect((r.components.headroom as any).reason).toBe('no_data');
+    expect((r.components.headroom as any).kind).toBe('no_data');
     expect(r.components.volume.available).toBe(true);
     expect(r.components.weightPerComponent).toBeCloseTo(0.5, 6);
     expect(s.components.weightPerComponent).toBeCloseTo(1 / 3, 6);
@@ -195,9 +195,9 @@ describe('expansionScore', () => {
   it('scores zero with zero weight when every source fails', () => {
     const Z = {
       icao: 'Z',
-      movements: fail('timeout') as any,
-      facility: fail('no_data') as any,
-      nasStatus: fail('invalid_input') as any,
+      movements: fail<Movements>(FailureKind.Unavailable),
+      facility: fail<FaaFacility>(FailureKind.NoData),
+      nasStatus: fail<NasStatus>(FailureKind.InvalidInput),
     };
 
     const results = scoreAirports([Z]);
@@ -247,7 +247,7 @@ describe('expansionScore', () => {
     const t = results[0];
 
     expect(t.components.headroom.available).toBe(false);
-    expect((t.components.headroom as any).reason).toBe('no_data');
+    expect((t.components.headroom as any).kind).toBe('no_data');
     expect(t.components.headroom.kpi).toBeNull();
     expect(t.components.headroom.normalized).toBeNull();
     expect(t.components.headroom.contribution).toBeNull();
@@ -262,6 +262,31 @@ describe('expansionScore', () => {
     const kpi = computeVolumeKpi(movements);
     expect(kpi.cargoMovements).toBeGreaterThanOrEqual(1);
     expect(kpi.passengerMovements).toBeGreaterThanOrEqual(1);
+  });
+
+  it('ranks an airport with zero measured traffic below a busy one, instead of excluding its volume and headroom components', () => {
+    const EMPTY = {
+      icao: 'EMPTY',
+      movements: ok(movementsWithCallsigns([])),
+      facility: ok(facilityWithRunways(2)),
+      nasStatus: ok(nasStatusWithEvents(0)),
+    };
+
+    const BUSY = {
+      icao: 'BUSY',
+      movements: ok(movementsWithCallsigns([...Array(20).fill('UAL1'), ...Array(20).fill('SWA1')])),
+      facility: ok(facilityWithRunways(2)),
+      nasStatus: ok(nasStatusWithEvents(0)),
+    };
+
+    const [empty, busy] = scoreAirports([EMPTY, BUSY]);
+
+    expect(empty.components.volume.available).toBe(true);
+    expect(empty.components.volume.kpi!.passengerMovements).toBe(0);
+    expect(empty.components.volume.normalized).toBe(0);
+    expect(empty.components.headroom.available).toBe(true);
+    expect(empty.components.availableComponentCount).toBe(3);
+    expect(empty.score).toBeLessThan(busy.score);
   });
 
   it('carries the real data window and the proxy disclosure onto the volume KPI', () => {

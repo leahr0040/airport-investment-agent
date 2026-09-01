@@ -21,6 +21,7 @@ import { fetchNasStatus } from '@/domain/adapters/nasStatus';
 import type { Movements, FlightMovement } from '@/domain/adapters/opensky.types';
 import type { RunwayGeometry } from '@/domain/adapters/faaFacility';
 import type { NasStatusEvent } from '@/domain/adapters/nasStatus';
+import { FailureKind } from '@/domain/adapters/types';
 
 describe('resolveRegion', () => {
   it('resolves a known region key to its ICAO codes', async () => {
@@ -93,12 +94,20 @@ describe('flightDestinationsTool', () => {
     ]);
   });
 
-  it('passes through available:false and reason on adapter failure', async () => {
-    vi.mocked(fetchMovements).mockResolvedValue({ ok: false, reason: 'timeout' });
+  it('collapses a transient adapter failure to unavailable instead of naming it', async () => {
+    vi.mocked(fetchMovements).mockResolvedValue({ ok: false, kind: FailureKind.Unavailable });
 
     const result = await flightDestinationsTool({ icaos: ['KXXX'] });
 
-    expect(result.results).toEqual([{ icao: 'KXXX', available: false, reason: 'timeout' }]);
+    expect(result.results).toEqual([{ icao: 'KXXX', available: false, kind: 'unavailable' }]);
+  });
+
+  it('keeps no_data, which is a fact about the airport rather than about our infrastructure', async () => {
+    vi.mocked(fetchMovements).mockResolvedValue({ ok: false, kind: FailureKind.NoData });
+
+    const result = await flightDestinationsTool({ icaos: ['KXXX'] });
+
+    expect(result.results).toEqual([{ icao: 'KXXX', available: false, kind: 'no_data' }]);
   });
 });
 
@@ -157,7 +166,7 @@ describe('runwayConditionsTool', () => {
   });
 
   it('reports each source independently available/unavailable when only one upstream fails', async () => {
-    vi.mocked(fetchFaaFacility).mockResolvedValue({ ok: false, reason: 'no_data' });
+    vi.mocked(fetchFaaFacility).mockResolvedValue({ ok: false, kind: FailureKind.NoData });
     vi.mocked(fetchNasStatus).mockResolvedValue({
       ok: true,
       data: { lid: 'XXX', icao: 'KXXX', updateTime: null, events: [] },
@@ -169,8 +178,8 @@ describe('runwayConditionsTool', () => {
     const [r] = result.results;
 
     expect(r.runways).toBeNull();
-    expect(r.runwaysReason).toBe('no_data');
+    expect(r.runwaysKind).toBe('no_data');
     expect(r.delayEvents).toEqual([]);
-    expect(r.delayEventsReason).toBeNull();
+    expect(r.delayEventsKind).toBeNull();
   });
 });

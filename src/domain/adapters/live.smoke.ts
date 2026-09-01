@@ -17,12 +17,12 @@ describe("live smoke", () => {
     );
 
     const opensky = await fetchMovements("KATL");
-    if (!opensky.ok) throw new Error(`OpenSky failed: ${opensky.reason} ${opensky.detail ?? ""}`);
+    if (!opensky.ok) throw new Error(`OpenSky failed: ${opensky.kind} ${opensky.detail ?? ""}`);
     expect(typeof opensky.data.departureCount).toBe("number");
     expect(typeof opensky.data.arrivalCount).toBe("number");
 
     const faa = await fetchNasStatus("KATL");
-    if (!faa.ok) throw new Error(`FAA failed: ${faa.reason} ${faa.detail ?? ""}`);
+    if (!faa.ok) throw new Error(`FAA failed: ${faa.kind} ${faa.detail ?? ""}`);
     expect(faa.data.lid).toBe("ATL");
     expect(Array.isArray(faa.data.events)).toBe(true);
 

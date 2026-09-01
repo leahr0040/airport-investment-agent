@@ -27,12 +27,12 @@ describe('NasStatusClient', () => {
 
   it('maps 429 to rate_limited', async () => {
     mockedAxios.get.mockResolvedValueOnce({ status: 429, data: '' } as never);
-    await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ reason: 'rate_limited' });
+    await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
   it('throws a reasoned error when upstream returns another non-200 status', async () => {
     mockedAxios.get.mockResolvedValueOnce({ status: 500, data: 'err' } as never);
-    await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ reason: 'error' });
+    await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
   it('normalizes a real axios ECONNABORTED timeout to a TimeoutError-named error', async () => {

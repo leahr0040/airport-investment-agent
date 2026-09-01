@@ -68,8 +68,8 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
   });
 
   it('rejects malformed codes before any network call', async () => {
-    await expect(fetchFaaFacility('atl')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
-    await expect(fetchFaaFacility('ATL')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
+    await expect(fetchFaaFacility('atl')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
+    await expect(fetchFaaFacility('ATL')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
     expect(mockedAxios.get).toHaveBeenCalledTimes(0);
   });
 
@@ -123,18 +123,18 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
 
     const res = await fetchFaaFacility('KXXX');
-    expect(res).toMatchObject({ ok: false, reason: 'no_data' });
+    expect(res).toMatchObject({ ok: false, kind: 'no_data' });
     expect(mockedAxios.get).toHaveBeenCalledTimes(1);
   });
 
   it.each([
-    ['timeout', () => Promise.reject(Object.assign(new Error('aborted'), { code: 'ECONNABORTED' })), 'timeout'],
-    ['rate_limited', () => Promise.resolve(axiosResponse(429, {})), 'rate_limited'],
-  ])('maps a %s upstream failure on the facility GET to reason %s', async (_label, mockImpl, expectedReason) => {
+    ['timeout', () => Promise.reject(Object.assign(new Error('aborted'), { code: 'ECONNABORTED' }))],
+    ['rate_limited', () => Promise.resolve(axiosResponse(429, {}))],
+  ])('collapses a %s upstream failure on the facility GET to unavailable', async (_label, mockImpl) => {
     mockedAxios.get.mockImplementationOnce(mockImpl as never);
 
     const res = await fetchFaaFacility('KATL');
-    expect(res).toMatchObject({ ok: false, reason: expectedReason });
+    expect(res).toMatchObject({ ok: false, kind: 'unavailable' });
   });
 
   it('never caches a no_data failure result: two consecutive lookups both hit the network', async () => {

@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { FailureKind, type HttpResponse } from './types';
+import { AdapterError } from './errors';
 
-type HttpResponse = { status: number; data: unknown };
 export type HttpClient = {
   get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
 };
@@ -14,39 +15,40 @@ export class FaaFacilityClient {
 
   private normalizeTimeout(err: unknown): unknown {
     if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
-      return Object.assign(new Error('TimeoutError'), { name: 'TimeoutError' });
+      return Object.assign(err, { name: 'TimeoutError' });
     }
     return err;
   }
 
   private async queryFeatures(layer: string, where: string, outFields: string): Promise<Record<string, unknown>[]> {
     const ARCGIS_BASE = 'https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services';
-    const url = `${ARCGIS_BASE}/${layer}/FeatureServer/0/query`;
-    const params = new URLSearchParams();
-    params.append('where', where);
-    params.append('outFields', outFields);
-    params.append('f', 'json');
-    params.append('returnGeometry', 'false');
+    const params = new URLSearchParams({ where, outFields, f: 'json', returnGeometry: 'false' });
+    const url = `${ARCGIS_BASE}/${layer}/FeatureServer/0/query?${params}`;
 
     let response;
     try {
-      response = await this.http.get(`${url}?${params.toString()}`, { timeout: this.timeoutMs, validateStatus: () => true });
+      response = await this.http.get(url, { timeout: this.timeoutMs, validateStatus: () => true });
     } catch (err) {
       throw this.normalizeTimeout(err);
     }
 
-    if (response.status === 429) {
-      throw Object.assign(new Error('rate_limited'), { reason: 'rate_limited' });
-    }
-
     if (response.status !== 200) {
-      throw Object.assign(new Error('upstream'), { reason: 'error' });
+      throw new AdapterError('UpstreamError', FailureKind.Unavailable, {
+        method: response.request?.method,
+        path: response.request?.path,
+        status: response.status,
+        data: response.data,
+      });
     }
 
     const body = response.data as { features?: { attributes: Record<string, unknown> }[]; error?: { code?: number; message?: string } };
-    if (body && typeof body === 'object' && body.error) {
-      const errMsg = body.error.message ?? 'ArcGisError';
-      throw Object.assign(new Error(errMsg), { reason: 'error' });
+    if (body?.error) {
+      throw new AdapterError('ArcGisError', FailureKind.Unavailable, {
+        method: response.request?.method,
+        path: response.request?.path,
+        status: response.status,
+        data: body.error,
+      });
     }
 
     return (body.features ?? []).map((f) => f.attributes);

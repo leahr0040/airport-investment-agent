@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { getEnv } from '@/config/env';
+import { FailureKind, type HttpResponse } from './types';
+import { AdapterError } from './errors';
 
 const TOKEN_ENDPOINT = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
 const FLIGHTS_BASE = 'https://opensky-network.org/api';
 
 export type TimeWindow = { begin: number; end: number };
 
-type HttpResponse = { status: number; data: unknown };
 export type HttpClient = {
   post: (url: string, data: unknown, config: Record<string, unknown>) => Promise<HttpResponse>;
   get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
@@ -48,15 +49,28 @@ export class OpenSkyClient {
       throw this.normalizeTimeout(err);
     }
 
-    if (response.status !== 200) throw new Error('TokenFetchFailed');
+    if (response.status !== 200) {
+      throw new AdapterError('TokenFetchFailed', FailureKind.Unavailable, {
+        method: response.request?.method,
+        path: response.request?.path,
+        status: response.status,
+      });
+    }
+
     const responseBody = response.data as { access_token?: string; expires_in?: number };
-    if (!responseBody.access_token || !responseBody.expires_in) throw new Error('TokenMissing');
+    if (!responseBody.access_token || !responseBody.expires_in) {
+      throw new AdapterError('TokenMissing', FailureKind.Unavailable, {
+        method: response.request?.method,
+        path: response.request?.path,
+        status: response.status,
+      });
+    }
     return { access_token: responseBody.access_token, expires_in: Number(responseBody.expires_in) };
   }
 
   private normalizeTimeout(err: unknown): unknown {
     if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
-      return Object.assign(new Error('TimeoutError'), { name: 'TimeoutError' });
+      return Object.assign(err, { name: 'TimeoutError' });
     }
     return err;
   }
@@ -80,7 +94,13 @@ export class OpenSkyClient {
     return pending;
   }
 
-  async requestLegUrl(url: string, token: string): Promise<Record<string, unknown>[]> {
+  async fetchFlightLeg(
+    icao: string,
+    kind: 'departure' | 'arrival',
+    window: TimeWindow,
+    token: string,
+  ): Promise<Record<string, unknown>[]> {
+    const url = this.buildFlightsUrl(icao, kind, window);
     let response;
     try {
       response = await this.http.get(url, {
@@ -92,24 +112,22 @@ export class OpenSkyClient {
       throw this.normalizeTimeout(err);
     }
 
+    // OpenSky returns 404, not an empty 200, when no flights exist for the period.
     if (response.status === 404) return [];
-    if (response.status === 429) {
-      const e: Error & { reason: string } = Object.assign(new Error('rate_limited'), { reason: 'rate_limited' });
-      throw e;
-    }
-    if (response.status === 401 || response.status === 403) {
-      this.clearTokenCache();
-      const e: Error & { reason: string } = Object.assign(new Error('unauthorized'), { reason: 'error' });
-      throw e;
-    }
+    if (response.status === 401 || response.status === 403) this.clearTokenCache();
+
     if (response.status !== 200) {
-      const e: Error & { reason: string } = Object.assign(new Error('upstream'), { reason: 'error' });
-      throw e;
+      throw new AdapterError('UpstreamError', FailureKind.Unavailable, {
+        method: response.request?.method,
+        path: response.request?.path,
+        status: response.status,
+        data: response.data,
+      });
     }
     return response.data as Record<string, unknown>[];
   }
 
-  buildFlightsUrl(icao: string, kind: 'departure' | 'arrival', window: TimeWindow) {
+  private buildFlightsUrl(icao: string, kind: 'departure' | 'arrival', window: TimeWindow) {
     return `${FLIGHTS_BASE}/flights/${kind}?airport=${encodeURIComponent(icao)}&begin=${window.begin}&end=${window.end}`;
   }
 }

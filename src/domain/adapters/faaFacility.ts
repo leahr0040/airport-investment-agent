@@ -1,9 +1,9 @@
 import 'server-only';
 import { withCache, FAA_FACILITY_TTL_MS } from './cache';
 import { faaFacilityClient } from './faaFacility.client';
-import type { AdapterFailReason, AdapterResult } from './types';
+import { FailureKind, type AdapterResult } from './types';
 import { isValidIcao, isValidIata } from './validate';
-import { toAdapterFailure } from './errors';
+import { AdapterError, toAdapterFailure } from './errors';
 
 export type RunwayEndpoint = { lat: number; lon: number };
 
@@ -33,17 +33,17 @@ function toFiniteOrNull(v: unknown): number | null {
 }
 
 export async function fetchFaaFacility(icao: string): Promise<AdapterResult<FaaFacility>> {
-  if (!isValidIcao(icao)) return { ok: false, reason: 'invalid_input' };
+  if (!isValidIcao(icao)) return { ok: false, kind: FailureKind.InvalidInput };
 
   const key = `faa-facility:${icao}`;
   try {
     return await withCache<AdapterResult<FaaFacility>>(key, FAA_FACILITY_TTL_MS, async () => {
       const facilityRows = await faaFacilityClient.fetchFacilityRows(icao);
-      if (!facilityRows || facilityRows.length === 0) throw Object.assign(new Error('no_data'), { reason: 'no_data' satisfies AdapterFailReason });
+      if (!facilityRows || facilityRows.length === 0) throw new AdapterError('FacilityNotFound', FailureKind.NoData);
 
       const first = facilityRows[0];
       const rawArpt = typeof first.ARPT_ID === 'string' ? first.ARPT_ID.trim().toUpperCase() : '';
-      if (!isValidIata(rawArpt)) throw Object.assign(new Error('error'), { reason: 'error' satisfies AdapterFailReason });
+      if (!isValidIata(rawArpt)) throw new AdapterError('MalformedFacilityRow', FailureKind.Unavailable);
 
       const runwayRows = await faaFacilityClient.fetchRunwayRows(rawArpt);
 

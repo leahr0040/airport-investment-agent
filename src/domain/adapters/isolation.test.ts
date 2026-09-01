@@ -32,15 +32,15 @@ describe('cross-adapter failure isolation', () => {
 
     const [opensky, faa] = await Promise.all([fetchMovements('KATL'), fetchNasStatus('KATL')]);
 
-    expect(opensky).toMatchObject({ ok: false, reason: 'timeout' });
+    expect(opensky).toMatchObject({ ok: false, kind: 'unavailable' });
     expect(faa.ok).toBe(true);
   });
 
   it('a malformed identifier short-circuits both adapters before any I/O', async () => {
     const [opensky, faa] = await Promise.all([fetchMovements('katl'), fetchNasStatus('katl')]);
 
-    expect(opensky).toMatchObject({ ok: false, reason: 'invalid_input' });
-    expect(faa).toMatchObject({ ok: false, reason: 'invalid_input' });
+    expect(opensky).toMatchObject({ ok: false, kind: 'invalid_input' });
+    expect(faa).toMatchObject({ ok: false, kind: 'invalid_input' });
     expect(mockedAxios.get).toHaveBeenCalledTimes(0);
   });
 });

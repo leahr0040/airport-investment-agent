@@ -10,6 +10,8 @@ function asClientWithToken(client: OpenSkyClient): { cachedToken: string | null 
   return client as unknown as { cachedToken: string | null };
 }
 
+const WINDOW = { begin: 0, end: 100 };
+
 describe('OpenSkyClient', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -52,8 +54,11 @@ describe('OpenSkyClient', () => {
 
     const client = new OpenSkyClient(3000, mockHttp);
 
-    await expect(client.requestLegUrl('https://opensky/fake', 'tok')).rejects.toMatchObject({ reason: 'rate_limited' });
-    expect(mockHttp.get).toHaveBeenCalledWith('https://opensky/fake', expect.objectContaining({ headers: expect.any(Object) }));
+    await expect(client.fetchFlightLeg('KATL', 'departure', WINDOW, 'tok')).rejects.toMatchObject({ kind: 'unavailable' });
+    expect(mockHttp.get).toHaveBeenCalledWith(
+      'https://opensky-network.org/api/flights/departure?airport=KATL&begin=0&end=100',
+      expect.objectContaining({ headers: expect.any(Object) }),
+    );
   });
 
   it('clears token cache on 401/403 and throws error', async () => {
@@ -64,7 +69,7 @@ describe('OpenSkyClient', () => {
     const client = new OpenSkyClient(3000, mockHttp);
     asClientWithToken(client).cachedToken = 'primed';
 
-    await expect(client.requestLegUrl('https://opensky/fake', 'primed')).rejects.toMatchObject({ reason: 'error' });
+    await expect(client.fetchFlightLeg('KATL', 'departure', WINDOW, 'primed')).rejects.toMatchObject({ kind: 'unavailable' });
     expect(asClientWithToken(client).cachedToken).toBeNull();
   });
 
@@ -75,6 +80,6 @@ describe('OpenSkyClient', () => {
 
     const client = new OpenSkyClient(3000, mockHttp);
 
-    await expect(client.requestLegUrl('https://opensky/fake', 'tok')).rejects.toMatchObject({ name: 'TimeoutError' });
+    await expect(client.fetchFlightLeg('KATL', 'departure', WINDOW, 'tok')).rejects.toMatchObject({ name: 'TimeoutError' });
   });
 });

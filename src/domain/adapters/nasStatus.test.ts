@@ -41,8 +41,8 @@ describe('FAA NAS Status adapter', () => {
   });
 
   it('rejects malformed codes before any network call', async () => {
-    await expect(fetchNasStatus('katl')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
-    await expect(fetchNasStatus('ATL')).resolves.toMatchObject({ ok: false, reason: 'invalid_input' });
+    await expect(fetchNasStatus('katl')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
+    await expect(fetchNasStatus('ATL')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
     expect(mockedAxios.get).toHaveBeenCalledTimes(0);
   });
 
@@ -183,14 +183,14 @@ describe('FAA NAS Status adapter', () => {
   });
 
   it.each([
-    ['timeout', () => Promise.reject(Object.assign(new Error('aborted'), { name: 'TimeoutError' })), 'timeout'],
-    ['rate_limited', () => Promise.resolve({ status: 429, data: '' }), 'rate_limited'],
-    ['server error', () => Promise.resolve({ status: 503, data: '' }), 'error'],
-  ])('maps a %s upstream failure to reason %s', async (_label, mockImpl, expectedReason) => {
+    ['timeout', () => Promise.reject(Object.assign(new Error('aborted'), { name: 'TimeoutError' }))],
+    ['rate_limited', () => Promise.resolve({ status: 429, data: '' })],
+    ['server error', () => Promise.resolve({ status: 503, data: '' })],
+  ])('collapses a %s upstream failure to unavailable', async (_label, mockImpl) => {
     mockedAxios.get.mockImplementationOnce(mockImpl as never);
 
     const res = await fetchNasStatus('KATL');
-    expect(res).toMatchObject({ ok: false, reason: expectedReason });
+    expect(res).toMatchObject({ ok: false, kind: 'unavailable' });
   });
 
   it('never leaks upstream free text into a failure detail', async () => {

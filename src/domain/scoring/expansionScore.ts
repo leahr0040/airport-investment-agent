@@ -1,7 +1,7 @@
 import type { Movements } from '../adapters/opensky.types';
 import type { FaaFacility } from '../adapters/faaFacility';
 import type { NasStatus } from '../adapters/nasStatus';
-import type { AdapterResult, AdapterFailReason } from '../adapters/types';
+import { FailureKind, type AdapterResult } from '../adapters/types';
 
 export const CARGO_CALLSIGN_PREFIXES = ['FDX', 'UPS', 'GTI', 'CKS', 'ABX', 'PAC', 'CLX', 'ACA', 'DAL', 'AAL'] as const;
 
@@ -27,7 +27,7 @@ type ComponentAvailable<T> = {
   contribution: number;
 };
 
-type ComponentUnavailable = { available: false; kpi: null; normalized: null; contribution: null; reason: AdapterFailReason };
+type ComponentUnavailable = { available: false; kpi: null; normalized: null; contribution: null; kind: FailureKind };
 
 export type ComponentResult<T> = ComponentAvailable<T> | ComponentUnavailable;
 
@@ -95,36 +95,35 @@ function resolveDelay(input: ScoringInput): DelayKpi | null {
   return input.nasStatus.ok ? computeDelayKpi(input.nasStatus.data) : null;
 }
 
-function volumeReason(input: ScoringInput): AdapterFailReason {
-  return input.movements.ok ? 'error' : input.movements.reason;
+function volumeKind(input: ScoringInput): FailureKind {
+  return input.movements.ok ? FailureKind.Unavailable : input.movements.kind;
 }
 
-function headroomReason(input: ScoringInput): AdapterFailReason {
-  if (!input.movements.ok) return input.movements.reason;
-  if (!input.facility.ok) return input.facility.reason;
-  return 'no_data';
+function headroomKind(input: ScoringInput): FailureKind {
+  if (!input.movements.ok) return input.movements.kind;
+  if (!input.facility.ok) return input.facility.kind;
+  return FailureKind.NoData;
 }
 
-function delayReason(input: ScoringInput): AdapterFailReason {
-  return input.nasStatus.ok ? 'error' : input.nasStatus.reason;
+function delayKind(input: ScoringInput): FailureKind {
+  return input.nasStatus.ok ? FailureKind.Unavailable : input.nasStatus.kind;
 }
 
 function buildComponent<K>(
   kpi: K | null,
   metric: (k: K) => number,
-  reason: AdapterFailReason,
+  kind: FailureKind,
   dataset: number[],
   weight: number
 ): ComponentResult<K> {
   if (kpi === null) {
-    return { available: false, kpi: null, normalized: null, contribution: null, reason };
+    return { available: false, kpi: null, normalized: null, contribution: null, kind };
   }
   const normalized = minMaxNormalize(metric(kpi), dataset);
   return { available: true, kpi, normalized, contribution: normalized * weight };
 }
 
 export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
-
   const resolved = inputs.map((input) => ({
     input,
     vol: resolveVolume(input),
@@ -140,9 +139,9 @@ export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
     const availableCount = [vol, head, delay].filter((k) => k !== null).length;
     const weightPerComponent = availableCount > 0 ? 1 / availableCount : 0;
 
-    const volumeComponent = buildComponent(vol, (k) => k.passengerMovements, volumeReason(input), volumeDataset, weightPerComponent);
-    const headroomComponent = buildComponent(head, (k) => k.movementsPerRunway, headroomReason(input), headroomDataset, weightPerComponent);
-    const delayComponent = buildComponent(delay, (k) => k.eventCount, delayReason(input), delayDataset, weightPerComponent);
+    const volumeComponent = buildComponent(vol, (k) => k.passengerMovements, volumeKind(input), volumeDataset, weightPerComponent);
+    const headroomComponent = buildComponent(head, (k) => k.movementsPerRunway, headroomKind(input), headroomDataset, weightPerComponent);
+    const delayComponent = buildComponent(delay, (k) => k.eventCount, delayKind(input), delayDataset, weightPerComponent);
 
     const score = (volumeComponent.contribution ?? 0) + (headroomComponent.contribution ?? 0) + (delayComponent.contribution ?? 0);
 

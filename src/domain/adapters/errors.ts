@@ -1,37 +1,33 @@
-import type { AdapterFailReason, AdapterResult } from "./types";
+import { FailureKind, type AdapterResult } from "./types";
 
-const ADAPTER_FAILURE_REASONS: readonly AdapterFailReason[] = [
-  "timeout",
-  "invalid_input",
-  "rate_limited",
-  "no_data",
-  "error",
-];
-
-function isAdapterFailReason(value: unknown): value is AdapterFailReason {
-  return typeof value === "string" && ADAPTER_FAILURE_REASONS.includes(value as AdapterFailReason);
+export class AdapterError extends Error {
+  constructor(
+    name: string,
+    readonly kind: FailureKind,
+    readonly context: Record<string, unknown> | null = null,
+    readonly originalError: Error | null = null,
+  ) {
+    super(name, originalError ? { cause: originalError } : undefined);
+    this.name = name;
+  }
 }
 
 function withSource(detail: string, source?: string): string {
   return source ? `${source}: ${detail}` : detail;
 }
 
-export function toAdapterFailure(err: unknown, source?: string): AdapterResult<never> {
-  if (err instanceof Error) {
-    if (err.name === "TimeoutError") {
-      return { ok: false, reason: "timeout", detail: withSource(err.name, source) };
-    }
-
-    if ("reason" in err && isAdapterFailReason(err.reason)) {
-      return {
-        ok: false,
-        reason: err.reason,
-        detail: withSource(err.reason, source),
-      };
-    }
-
-    return { ok: false, reason: "error", detail: withSource(err.name, source) };
+function classify(err: unknown, source?: string): Extract<AdapterResult<never>, { ok: false }> {
+  if (!(err instanceof Error)) {
+    return { ok: false, kind: FailureKind.Unavailable, detail: withSource("UnknownError", source) };
   }
 
-  return { ok: false, reason: "error", detail: withSource("UnknownError", source) };
+  const kind = err instanceof AdapterError ? err.kind : FailureKind.Unavailable;
+  return { ok: false, kind, detail: withSource(err.name, source) };
+}
+
+export function toAdapterFailure(err: unknown, source?: string): AdapterResult<never> {
+  const failure = classify(err, source);
+  const trace = err instanceof Error ? `${err.message} | ${err.stack}` : String(err);
+  console.warn("[adapter]", failure.detail, trace);
+  return failure;
 }

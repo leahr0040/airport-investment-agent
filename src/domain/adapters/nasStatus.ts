@@ -4,7 +4,7 @@ import { nasStatusClient } from './nasStatus.client';
 import type { AdapterResult } from './types';
 import { isValidIcao, isValidIata } from './validate';
 import { toAdapterFailure } from './errors';
-import { FailReason } from './types';
+import { FailureKind } from './types';
 
 export type NasStatusEvent = {
   type: string;
@@ -46,10 +46,10 @@ function findMatchingEntries(node: unknown, lid: string): Record<string, unknown
 const FIELDS_WITH_TYPED_PROPERTIES = ['ARPT', 'Reason', 'Start', 'Reopen'];
 
 export async function fetchNasStatus(icao: string): Promise<AdapterResult<NasStatus>> {
-  if (!isValidIcao(icao)) return { ok: false, reason: FailReason.InvalidInput };
+  if (!isValidIcao(icao)) return { ok: false, kind: FailureKind.InvalidInput };
 
   const lid = toFaaLid(icao);
-  if (!isValidIata(lid)) return { ok: false, reason: FailReason.InvalidInput };
+  if (!isValidIata(lid)) return { ok: false, kind: FailureKind.InvalidInput };
 
   try {
     const feedXml = await nasStatusClient.fetchCachedFeed();
