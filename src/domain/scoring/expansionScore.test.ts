@@ -73,8 +73,8 @@ function fail<T>(reason: string): AdapterResult<T> {
   return { ok: false, reason: reason as any };
 }
 
-describe('expansionScore (phase plan)', () => {
-  it('case group 1: three-airport comparison with cargo separation', () => {
+describe('expansionScore', () => {
+  it('separates cargo from passenger movements and normalizes every component across the query set', () => {
     const SMALL = {
       icao: 'SMALL',
       movements: ok(movementsWithCallsigns([ ...Array(5).fill('UAL1'), ...Array(5).fill('SWA1') ])),
@@ -103,7 +103,6 @@ describe('expansionScore (phase plan)', () => {
     expect(anc.components.volume.kpi!.passengerMovements).toBe(4);
     expect(anc.components.headroom.kpi!.totalMovements).toBe(20);
 
-    const volVals = results.map((r) => r.components.volume.available ? r.components.volume.normalized! : null).filter((v) => v !== null) as number[];
     const ancVol = anc.components.volume.normalized!;
     const small = results.find((r) => r.icao === 'SMALL')!;
     const busy = results.find((r) => r.icao === 'BUSY')!;
@@ -134,7 +133,7 @@ describe('expansionScore (phase plan)', () => {
     expect(sumContrib).toBeCloseTo(busy.score, 3);
   });
 
-  it('case group 2: weight redistribution when delay unavailable', () => {
+  it('redistributes weight across the surviving components when the delay source fails', () => {
     const P = {
       icao: 'P',
       movements: ok(movementsWithCallsigns([ ...Array(30).fill('UAL1') ])),
@@ -165,7 +164,7 @@ describe('expansionScore (phase plan)', () => {
     expect(q.score).toBeCloseTo(100, 6);
   });
 
-  it('case group 3: headroom requires both movements and facility', () => {
+  it('marks headroom unavailable when the facility source fails, leaving volume intact', () => {
     const R = {
       icao: 'R',
       movements: ok(movementsWithCallsigns([ ...Array(40).fill('UALX') ])),
@@ -193,7 +192,7 @@ describe('expansionScore (phase plan)', () => {
     expect(s.components.headroom.normalized).toBeCloseTo(50, 6);
   });
 
-  it('case group 4: all three groups unavailable', () => {
+  it('scores zero with zero weight when every source fails', () => {
     const Z = {
       icao: 'Z',
       movements: fail('timeout') as any,
@@ -208,7 +207,7 @@ describe('expansionScore (phase plan)', () => {
     expect(z.components.coverage).toBe('0 of 3 components available');
   });
 
-  it('case group 5: determinism', () => {
+  it('produces identical output for identical input', () => {
     const SMALL = {
       icao: 'SMALL',
       movements: ok(movementsWithCallsigns([ ...Array(5).fill('UAL1'), ...Array(5).fill('SWA1') ])),
@@ -236,7 +235,7 @@ describe('expansionScore (phase plan)', () => {
     expect(a).toEqual(b);
   });
 
-  it('case group 7 (WR-04): zero-runway facility yields headroom unavailable with reason no_data', () => {
+  it('treats a zero-runway facility as no_data for headroom rather than dividing by zero', () => {
     const T = {
       icao: 'T',
       movements: ok(movementsWithCallsigns([...Array(10).fill('UAL1')])),
@@ -256,7 +255,7 @@ describe('expansionScore (phase plan)', () => {
     expect(t.components.delayFrequency.available).toBe(true);
   });
 
-  it('case group 6: cargo-carrier allowlist membership and null callsign handling', () => {
+  it('classifies a listed callsign prefix as cargo and never classifies a null callsign', () => {
     expect(CARGO_CALLSIGN_PREFIXES.includes('DAL' as any)).toBe(true);
 
     const movements = movementsWithCallsigns(['DAL123', 'XYZ001', null]);
@@ -265,7 +264,7 @@ describe('expansionScore (phase plan)', () => {
     expect(kpi.passengerMovements).toBeGreaterThanOrEqual(1);
   });
 
-  it('case group 8 (QUERY-05): computeVolumeKpi threads the real data window and a proxy disclosure', () => {
+  it('carries the real data window and the proxy disclosure onto the volume KPI', () => {
     const movements = movementsWithCallsigns(['UAL1', 'SWA1']);
     const window = { begin: 1000, end: 2000, beginIso: '2026-08-19T00:00:00.000Z', endIso: '2026-08-19T00:16:40.000Z' };
     movements.window = window;
@@ -275,7 +274,7 @@ describe('expansionScore (phase plan)', () => {
     expect(kpi.measuredVsProxied).toBe(VOLUME_PROXY_DISCLOSURE);
   });
 
-  it('case group 8 (QUERY-05): scoreAirports carries the window through to components.volume.kpi when volume is available', () => {
+  it('exposes the data window on components.volume.kpi when volume is available', () => {
     const window = { begin: 1000, end: 2000, beginIso: '2026-08-19T00:00:00.000Z', endIso: '2026-08-19T00:16:40.000Z' };
     const movements = movementsWithCallsigns(['UAL1', 'SWA1']);
     movements.window = window;
