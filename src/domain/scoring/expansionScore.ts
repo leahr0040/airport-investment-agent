@@ -58,10 +58,7 @@ export function isCargoCallsign(callsign: string | null): boolean {
 export function computeVolumeKpi(movements: Movements): VolumeKpi {
   const all = [...movements.departures, ...movements.arrivals];
   const totalMovements = movements.departureCount + movements.arrivalCount;
-  let cargoMovements = 0;
-  for (const f of all) {
-    if (isCargoCallsign(f.callsign)) cargoMovements += 1;
-  }
+  const cargoMovements = all.filter((f) => isCargoCallsign(f.callsign)).length;
   const passengerMovements = Math.max(0, totalMovements - cargoMovements);
   return { passengerMovements, cargoMovements, totalMovements, window: movements.window, measuredVsProxied: VOLUME_PROXY_DISCLOSURE };
 }
