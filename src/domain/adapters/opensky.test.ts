@@ -72,7 +72,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
   });
 
   it('reports an 86400-second window with the end floored to the bucket boundary', async () => {
-    vi.setSystemTime(new Date('2026-01-01T12:00:37.000Z')); // not on a 300s bucket boundary
+    vi.setSystemTime(new Date('2026-01-01T12:00:37.000Z'));
     mockedAxios.post.mockResolvedValueOnce(axiosResponse(200, TOKEN_BODY));
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, [{ callsign: 'A' }]));
     mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, []));
@@ -92,7 +92,6 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     vi.advanceTimersByTime(60_000);
     await fetchMovements('KATL');
 
-    // token + dep + arr = 3 calls
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     expect(mockedAxios.get).toHaveBeenCalledTimes(2);
   });
@@ -102,7 +101,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     mockedAxios.get.mockResolvedValue(axiosResponse(200, [{ callsign: 'A' }]));
 
     await fetchMovements('KATL');
-    vi.advanceTimersByTime(301_000); // past OPENSKY_BUCKET_SECONDS, token still valid
+    vi.advanceTimersByTime(301_000);
     await fetchMovements('KATL');
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
@@ -114,7 +113,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
     mockedAxios.get.mockResolvedValue(axiosResponse(200, [{ callsign: 'A' }]));
 
     await fetchMovements('KATL');
-    clearCache(); // force the outer movements cache to miss without touching the token cache
+    clearCache();
     await fetchMovements('KATL');
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
@@ -126,7 +125,7 @@ describe('OpenSky adapter (fetchMovements) with axios', () => {
 
     await fetchMovements('KATL');
     clearCache();
-    vi.advanceTimersByTime(3600_000); // past the token's expiry
+    vi.advanceTimersByTime(3600_000);
     await fetchMovements('KATL');
 
     expect(mockedAxios.post).toHaveBeenCalledTimes(2);

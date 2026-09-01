@@ -3,8 +3,6 @@ import { getEnv } from '@/config/env';
 import { TOOL_DECLARATIONS, TOOL_HANDLERS, type ToolName } from '@/domain/agent/tools';
 import { getOrCreateChat } from './sessionStore';
 
-// Caps Gemini round-trips per user query - a multi-tool chain (resolve_region then
-// score_airports) normally finishes in 2-3 rounds; this is a runaway-cost backstop.
 const MAX_TOOL_ROUNDS = 4;
 
 export const SYSTEM_PROMPT =
@@ -14,9 +12,6 @@ export const SYSTEM_PROMPT =
   "When answering a why-does-this-airport-have-unmet-demand question, call runway_conditions and explicitly label any runway-separation or grouping judgment as your own estimate from the provided coordinates, not a code-computed value, cross-referenced against the result's delayEvents. " +
   'If the question does not name or imply any airport or US region, answer directly without calling any tool.';
 
-// Everything below is constructed once per server instance, not per request (see
-// instrumentation.ts) - these are shared, built-once config values (client, model, tools),
-// while session-scoped conversation continuity lives in sessionStore.ts, keyed by sessionId.
 const geminiClient = new GoogleGenAI({ apiKey: getEnv().GOOGLE_GENERATIVE_AI_API_KEY });
 const AGENT_MODEL = getEnv().GOOGLE_GENERATIVE_AI_MODEL;
 const AGENT_TOOLS = [{ functionDeclarations: TOOL_DECLARATIONS as never }];
@@ -34,12 +29,6 @@ function createChat(): Chat {
   });
 }
 
-// Chat's own history capture replaces the manual contents array because it already
-// preserves whatever per-turn state Gemini requires across tool-call rounds, verified
-// live in live.smoke.ts, and it is what makes session-scoped memory possible without
-// re-deriving history on every call.
-// The agent picks which tool(s) to call and writes the final answer itself - this
-// function only executes whatever it decides and returns its own response text.
 export async function runAgent(sessionId: string, query: string): Promise<string> {
   const chat = getOrCreateChat(sessionId, createChat);
   let message: Parameters<Chat['sendMessage']>[0]['message'] = query;

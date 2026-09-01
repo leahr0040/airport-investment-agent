@@ -8,8 +8,6 @@ import { fetchNasStatus, type NasStatusEvent } from '@/domain/adapters/nasStatus
 import { isValidIcao } from '@/domain/adapters/validate';
 import type { AdapterFailReason } from '@/domain/adapters/types';
 
-// Tool schemas the agent selects from - kept to plain JSON Schema (parametersJsonSchema)
-// rather than the provider's Type enum, since that's what @google/genai accepts directly.
 export const TOOL_DECLARATIONS = [
   {
     name: 'resolve_region',
@@ -106,8 +104,6 @@ export async function flightDestinationsTool(args: { icaos: string[] }): Promise
 
 export type DelayCategory = 'closure' | 'ground_stop' | 'ground_delay' | 'arrival_departure_delay' | 'other';
 
-// Never returns or embeds the raw upstream type string - reduces to a fixed enum via keyword
-// match only, preserving the SEC-04 guarantee that no raw upstream text reaches the LLM.
 export function classifyDelayType(rawType: string): DelayCategory {
   const lower = rawType.toLowerCase();
   if (lower.includes('closure')) return 'closure';

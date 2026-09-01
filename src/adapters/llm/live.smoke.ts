@@ -1,8 +1,3 @@
-// Opt-in live proof that @google/genai's Chat class preserves whatever per-turn state
-// Gemini needs across a tool-call round-trip on its own, with zero manual thought_signature
-// echo. Never runs as part of `npm test` - the smoke config's include pattern
-// (src/**/*.smoke.ts) does not overlap the default config's (src/**/*.test.ts). Run with
-// `npm run smoke`.
 import { describe, expect, it } from 'vitest';
 import { GoogleGenAI, FunctionCallingConfigMode } from '@google/genai';
 import { getEnv } from '@/config/env';

@@ -3,14 +3,10 @@ import type { FaaFacility } from '../adapters/faaFacility';
 import type { NasStatus } from '../adapters/nasStatus';
 import type { AdapterResult, AdapterFailReason } from '../adapters/types';
 
-// Cargo-callsign allowlist. ASSUMED / not exhaustive: curated from RESEARCH.md assumptions.
 export const CARGO_CALLSIGN_PREFIXES = ['FDX', 'UPS', 'GTI', 'CKS', 'ABX', 'PAC', 'CLX', 'ACA', 'DAL', 'AAL'] as const;
 
 export const SCORING_WEIGHTS = { volume: 1 / 3, headroom: 1 / 3, delayFrequency: 1 / 3 } as const;
 
-// passengerMovements/cargoMovements are movement counts (departures+arrivals classified by callsign
-// prefix), not measured passenger/cargo volume - CLAUDE.md's documented proxy trade-off, surfaced here
-// so score_airports' tool result can disclose it verbatim rather than leaving it implicit.
 export const VOLUME_PROXY_DISCLOSURE =
   'passengerMovements and cargoMovements are movement-count proxies (flights classified by callsign prefix), not measured passenger or cargo volume.';
 
@@ -70,8 +66,6 @@ export function computeVolumeKpi(movements: Movements): VolumeKpi {
   return { passengerMovements, cargoMovements, totalMovements, window: movements.window, measuredVsProxied: VOLUME_PROXY_DISCLOSURE };
 }
 
-// Precondition: caller must only invoke this with facility.runways.length > 0 —
-// zero-runway facilities are routed to an unavailable component before this is called.
 export function computeHeadroomKpi(movements: Movements, facility: FaaFacility): HeadroomKpi {
   const totalMovements = movements.departureCount + movements.arrivalCount;
   const runwayCount = facility.runways.length;
@@ -133,7 +127,6 @@ function buildComponent<K>(
 }
 
 export function scoreAirports(inputs: ScoringInput[]): ExpansionScore[] {
-  // Pure function: no side effects, deterministic output.
 
   const resolved = inputs.map((input) => ({
     input,

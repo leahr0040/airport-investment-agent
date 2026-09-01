@@ -3,8 +3,6 @@ import { withCache, NAS_STATUS_TTL_MS } from './cache';
 
 const NAS_FEED_URL = 'https://nasstatus.faa.gov/api/airport-status-information';
 
-// axios's `timeout` option rejects with code ECONNABORTED, not an error named "TimeoutError" -
-// toAdapterFailure (src/domain/adapters/errors.ts) only recognises the latter, so normalize here.
 function normalizeTimeout(err: unknown): unknown {
   if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
     return Object.assign(new Error('TimeoutError'), { name: 'TimeoutError' });
@@ -18,8 +16,6 @@ export class NasStatusClient {
 
   constructor(private readonly http = axios) {}
 
-  // The feed takes no query parameters - one fixed cache key for the whole document (DATA-04),
-  // not a per-airport key, which would create N independent TTL clocks over one atomic document.
   async fetchCachedFeed(): Promise<string> {
     return await withCache(this.cacheKey, NAS_STATUS_TTL_MS, async () => {
       let response;

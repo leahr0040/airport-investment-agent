@@ -38,10 +38,7 @@ export async function fetchFaaFacility(icao: string): Promise<AdapterResult<FaaF
   const key = `faa-facility:${icao}`;
   try {
     return await withCache<AdapterResult<FaaFacility>>(key, FAA_FACILITY_TTL_MS, async () => {
-      // facility rows
       const facilityRows = await faaFacilityClient.fetchFacilityRows(icao);
-      // Throw (not return) on a cache-body failure: cache.ts's withCache only calls
-      // cache.set after fn() resolves, so a rejection is never pinned for the 24h TTL.
       if (!facilityRows || facilityRows.length === 0) throw Object.assign(new Error('no_data'), { reason: 'no_data' satisfies AdapterFailReason });
 
       const first = facilityRows[0];

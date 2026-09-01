@@ -7,8 +7,6 @@ const FLIGHTS_BASE = 'https://opensky-network.org/api';
 export type TimeWindow = { begin: number; end: number };
 
 type HttpResponse = { status: number; data: unknown };
-// Minimal shape OpenSkyClient actually calls - lets tests pass a plain vi.fn() double
-// instead of satisfying axios's full (and heavily overloaded) AxiosInstance type.
 export type HttpClient = {
   post: (url: string, data: unknown, config: Record<string, unknown>) => Promise<HttpResponse>;
   get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
@@ -56,8 +54,6 @@ export class OpenSkyClient {
     return { access_token: responseBody.access_token, expires_in: Number(responseBody.expires_in) };
   }
 
-  // axios's `timeout` option rejects with code ECONNABORTED, not an error named "TimeoutError" -
-  // toAdapterFailure (src/domain/adapters/errors.ts) only recognises the latter, so normalize here.
   private normalizeTimeout(err: unknown): unknown {
     if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ECONNABORTED') {
       return Object.assign(new Error('TimeoutError'), { name: 'TimeoutError' });

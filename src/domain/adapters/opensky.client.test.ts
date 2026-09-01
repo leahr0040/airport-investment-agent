@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Ensure env is present before importing the client
 process.env.OPENSKY_CLIENT_ID = 'test-id';
 process.env.OPENSKY_CLIENT_SECRET = 'test-secret';
 process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'dummy';
@@ -63,7 +62,6 @@ describe('OpenSkyClient', () => {
     } as unknown as HttpClient;
 
     const client = new OpenSkyClient(3000, mockHttp);
-    // prime cache
     asClientWithToken(client).cachedToken = 'primed';
 
     await expect(client.requestLegUrl('https://opensky/fake', 'primed')).rejects.toMatchObject({ reason: 'error' });

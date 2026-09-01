@@ -1,18 +1,8 @@
-/**
- * Airport location lookup: a flat, hardcoded map from region/metro names to
- * airport code pairs `{iata, icao}`. The table carries ICAO codes as data
- * because no live registry supplies the ICAO↔IATA join after the Phase 1
- * architecture pivot (D-09). A K-prefix derivation is applied only on the
- * passthrough branch for inputs not present in the table (D-10); ANC and HNL
- * are the documented exceptions and carry their P-prefixed ICAOs in the table.
- */
-
 import { isValidIcao, isValidIata } from '@/domain/adapters/validate';
 
 export type AirportCodes = { readonly iata: string; readonly icao: string };
 
 const REGION_LOOKUP: Readonly<Record<string, readonly AirportCodes[]>> = {
-  // Regions
   'new england': [
     { iata: 'BOS', icao: 'KBOS' },
     { iata: 'BDL', icao: 'KBDL' },
@@ -72,7 +62,6 @@ const REGION_LOOKUP: Readonly<Record<string, readonly AirportCodes[]>> = {
   alaska: [{ iata: 'ANC', icao: 'PANC' }],
   hawaii: [{ iata: 'HNL', icao: 'PHNL' }],
 
-  // Metro aggregations
   la: [
     { iata: 'LAX', icao: 'KLAX' },
     { iata: 'BUR', icao: 'KBUR' },
@@ -137,11 +126,6 @@ export function regionKeys(): string[] {
   return Object.keys(REGION_LOOKUP);
 }
 
-/**
- * Converts an already-extracted name or code into an array of `{iata, icao}` pairs.
- * Table hits return the stored pairs unchanged; passthrough uses a K-prefix
- * derivation for 3-letter inputs except for documented Alaska/Hawaii exceptions.
- */
 export function lookupAirports(query: string): AirportCodes[] {
   const key = query.trim().toLowerCase();
   const known = REGION_LOOKUP[key];
@@ -155,7 +139,6 @@ export function lookupAirports(query: string): AirportCodes[] {
 
   if (norm.length === 3) {
     if (!isValidIata(norm)) return [];
-    // Two exceptions use P-prefixed ICAO codes instead of K-prefixed.
     const exceptions: Record<string, string> = { ANC: 'PANC', HNL: 'PHNL' };
     const icao = exceptions[norm] ?? `K${norm}`;
     return [{ iata: norm, icao }];

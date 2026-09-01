@@ -1,7 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-// google.ts now constructs its GoogleGenAI client at module-import time (a startup
-// singleton), so the mock value must be hoisted above that import-time evaluation too.
 const { chatsCreateMock, sendMessageMock } = vi.hoisted(() => ({
   chatsCreateMock: vi.fn(),
   sendMessageMock: vi.fn(),

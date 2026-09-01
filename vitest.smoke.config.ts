@@ -7,7 +7,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 try {
   process.loadEnvFile();
 } catch {
-  // no .env file present - fetchMovements/fetchNasStatus will fail loudly with a clear reason
 }
 
 export default defineConfig({

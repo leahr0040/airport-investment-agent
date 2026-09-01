@@ -15,8 +15,6 @@ export type AdapterResult<T> =
   | {
       ok: false;
       reason: AdapterFailReason;
-      // Detail must be only a status code or error name, never a response body, header, token, or credential.
       detail?: string;
     };
 
-// D-06 hard-fails upstream errors; do not restore a stale-serving branch.

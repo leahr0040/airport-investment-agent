@@ -13,9 +13,6 @@ const schema = z.object({
   OPENSKY_CLIENT_ID: z.string(OPENSKY_ID_MSG).trim().min(1, OPENSKY_ID_MSG),
   OPENSKY_CLIENT_SECRET: z.string(OPENSKY_SECRET_MSG).trim().min(1, OPENSKY_SECRET_MSG),
   GOOGLE_GENERATIVE_AI_API_KEY: z.string(GEMINI_KEY_MSG).trim().min(1, GEMINI_KEY_MSG),
-  // Optional: swap models without touching call sites. "gemini-flash-latest" is a Google-
-  // maintained alias, not a pinned dated model - a dated id (e.g. gemini-2.5-flash) can get
-  // gated for new-user projects with no warning, as verified live on 2026-08-13.
   GOOGLE_GENERATIVE_AI_MODEL: z.string().trim().min(1).default("gemini-flash-latest"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"], LOG_LEVEL_MSG).default("info"),
 });

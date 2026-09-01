@@ -1,4 +1,3 @@
-// Proves ROADMAP Phase 2 success criterion 4: one source failing leaves the other's answer intact.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from 'axios';
 import { clearCache } from './cache';

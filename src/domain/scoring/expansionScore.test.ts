@@ -12,7 +12,6 @@ import {
 } from './expansionScore';
 
 function movementsWithCallsigns(callsigns: (string | null)[]): Movements {
-  // split the provided callsigns into departures (first half) and arrivals (second half)
   const half = Math.floor(callsigns.length / 2);
   const depCalls = callsigns.slice(0, half);
   const arrCalls = callsigns.slice(half);
@@ -76,7 +75,6 @@ function fail<T>(reason: string): AdapterResult<T> {
 
 describe('expansionScore (phase plan)', () => {
   it('case group 1: three-airport comparison with cargo separation', () => {
-    // callsign prefixes: passenger UAL/SWA, cargo FDX/UPS/GTI
     const SMALL = {
       icao: 'SMALL',
       movements: ok(movementsWithCallsigns([ ...Array(5).fill('UAL1'), ...Array(5).fill('SWA1') ])),
@@ -105,7 +103,6 @@ describe('expansionScore (phase plan)', () => {
     expect(anc.components.volume.kpi!.passengerMovements).toBe(4);
     expect(anc.components.headroom.kpi!.totalMovements).toBe(20);
 
-    // normalized volume across [10,100,4]
     const volVals = results.map((r) => r.components.volume.available ? r.components.volume.normalized! : null).filter((v) => v !== null) as number[];
     const ancVol = anc.components.volume.normalized!;
     const small = results.find((r) => r.icao === 'SMALL')!;
@@ -115,28 +112,23 @@ describe('expansionScore (phase plan)', () => {
     expect(ancVol).toBeCloseTo(0, 4);
     expect(small.components.volume.normalized).toBeCloseTo(6.25, 4);
 
-    // headroom normalized: movements-per-runway [5,25,6.6667]
     expect(small.components.headroom.normalized).toBeCloseTo(0, 4);
     expect(busy.components.headroom.normalized).toBeCloseTo(100, 4);
     expect(anc.components.headroom.normalized).toBeCloseTo(8.3333, 4);
 
-    // delay normalized [0,1,0]
     expect(small.components.delayFrequency.normalized).toBeCloseTo(0, 4);
     expect(busy.components.delayFrequency.normalized).toBeCloseTo(100, 4);
     expect(anc.components.delayFrequency.normalized).toBeCloseTo(0, 4);
 
-    // final scores
     expect(small.score).toBeCloseTo(2.0833, 3);
     expect(busy.score).toBeCloseTo(100, 3);
     expect(anc.score).toBeCloseTo(2.7778, 3);
 
-    // weight per component
     results.forEach((r) => {
       expect(r.components.weightPerComponent).toBeCloseTo(1 / 3, 6);
       expect(r.components.coverage).toBe('3 of 3 components available');
     });
 
-    // BUSY contributions sum to parent score
     const busyComps = busy.components;
     const sumContrib = busyComps.volume.contribution! + busyComps.headroom.contribution! + busyComps.delayFrequency.contribution!;
     expect(sumContrib).toBeCloseTo(busy.score, 3);
@@ -198,7 +190,6 @@ describe('expansionScore (phase plan)', () => {
     expect(r.components.weightPerComponent).toBeCloseTo(0.5, 6);
     expect(s.components.weightPerComponent).toBeCloseTo(1 / 3, 6);
 
-    // headroom dataset contains only S -> min===max -> normalized 50 fallback
     expect(s.components.headroom.normalized).toBeCloseTo(50, 6);
   });
 
@@ -266,15 +257,11 @@ describe('expansionScore (phase plan)', () => {
   });
 
   it('case group 6: cargo-carrier allowlist membership and null callsign handling', () => {
-    // ensure DAL is present in the allowlist per plan
     expect(CARGO_CALLSIGN_PREFIXES.includes('DAL' as any)).toBe(true);
 
     const movements = movementsWithCallsigns(['DAL123', 'XYZ001', null]);
     const kpi = computeVolumeKpi(movements);
-    // DAL classified as cargo per heuristic
     expect(kpi.cargoMovements).toBeGreaterThanOrEqual(1);
-    // XYZ not in list -> passenger
-    // null callsign never classified as cargo
     expect(kpi.passengerMovements).toBeGreaterThanOrEqual(1);
   });
 

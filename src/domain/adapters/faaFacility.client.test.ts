@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { FaaFacilityClient, type HttpClient } from './faaFacility.client';
 
-// URLSearchParams percent-encodes both '=' and "'" — decode before asserting on the where clause.
 function decodedUrl(url: string): string {
   return decodeURIComponent(url);
 }

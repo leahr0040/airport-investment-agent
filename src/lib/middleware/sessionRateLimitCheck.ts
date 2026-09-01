@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rateLimiter';
 
 export async function sessionRateLimitCheck(req: NextRequest): Promise<NextResponse | null> {
-  // proxy.ts validates this header as a UUID before this function ever runs, so no fallback is needed.
   const session = req.headers.get('x-session-id')!;
 
   const result = await checkRateLimit(session);
