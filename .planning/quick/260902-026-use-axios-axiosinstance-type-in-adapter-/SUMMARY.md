@@ -2,14 +2,13 @@
 quick_id: 260902-026
 slug: use-axios-axiosinstance-type-in-adapter-
 date: 2026-09-02
-status: incomplete
-commit: pending user approval
+status: complete
+commit: 1215600
 ---
 
 # Summary
 
-All edits applied and verified; commit held back per the user's standing rule to propose
-rather than run commits while a diff is under review.
+All edits applied, verified, and committed as 1215600.
 
 ## Changed
 

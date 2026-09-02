@@ -131,6 +131,7 @@ None yet.
 | 260820-mgm | Extract sessionIdValidationCheck.ts from proxy.ts's inline z.uuid() check, matching the ipRateLimitCheck/sessionRateLimitCheck one-function-per-file pattern | 2026-08-20 | e86275e, 0e32259 | [260820-mgm-extract-x-session-id-uuid-validation-fro](./quick/260820-mgm-extract-x-session-id-uuid-validation-fro/) |
 | 260901-g0s | An empty OpenSky window is a measured zero, not a failure — a zero-traffic airport now keeps all three scoring components and ranks last instead of scoring 50 | 2026-09-01 | 3b481c3 | [260901-g0s-opensky-empty-result-is-a-measured-zero-](./quick/260901-g0s-opensky-empty-result-is-a-measured-zero-/) |
 | 260901-vfx | Transport failures leave the adapters as AdapterError named after their code, so a timeout, a refused connection and a DNS failure are distinguishable in the log instead of all reading AxiosError | 2026-09-01 | a7fc461 | [260901-vfx-wrap-transport-errors-in-adaptererror](./quick/260901-vfx-wrap-transport-errors-in-adaptererror/) |
+| 260902-026 | Use axios AxiosInstance in the three adapter clients instead of three hand-rolled HttpClient types; unify test doubles on vi.mock(axios) and a shared test/helpers/axios.ts | 2026-09-02 | 1215600 | [260902-026-use-axios-axiosinstance-type-in-adapter-](./quick/260902-026-use-axios-axiosinstance-type-in-adapter-/) |
 
 ## Deferred Items
 
