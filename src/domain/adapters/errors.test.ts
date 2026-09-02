@@ -66,6 +66,27 @@ describe("toAdapterFailure", () => {
     warn.mockRestore();
   });
 
+  it("logs the request context an adapter error carries, without leaking it into the returned detail", () => {
+    const context = { method: "GET", path: "/api/flights/departure", status: 500, data: "upstream body" };
+    const error = new AdapterError("UpstreamError", FailureKind.Unavailable, context);
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = toAdapterFailure(error, "opensky");
+
+    expect(warn.mock.calls[0]).toContain(context);
+    expect(result).toEqual({ ok: false, kind: "unavailable", detail: "opensky: UpstreamError" });
+    warn.mockRestore();
+  });
+
+  it("adds no context argument for an error that carries none", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    toAdapterFailure(new Error("plain failure"));
+
+    expect(warn.mock.calls[0]).toHaveLength(3);
+    warn.mockRestore();
+  });
+
   it("never reads an error's message into its detail, only its name", () => {
     const secret = "429 body: Bearer fake-token-should-not-leak";
     const error = Object.assign(new Error(secret), {

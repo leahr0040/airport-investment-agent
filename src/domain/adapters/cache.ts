@@ -10,6 +10,7 @@ type Producer = () => Promise<NonNullable<unknown>>;
 const cache = new LRUCache<string, NonNullable<unknown>, Producer>({
   max: 2000,
   ttl: 1,
+  // Live Date-based clock: lru-cache's 1ms default parks "now" behind a setTimeout that fake-timer teardown drops, freezing this singleton's TTLs.
   perf: { now: () => Date.now() },
   ttlResolution: 0,
   fetchMethod: (_key, _stale, { context }) => context(),

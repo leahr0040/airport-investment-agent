@@ -38,6 +38,7 @@ function classify(err: unknown, source?: string): Extract<AdapterResult<never>, 
 export function toAdapterFailure(err: unknown, source?: string): AdapterResult<never> {
   const failure = classify(err, source);
   const trace = err instanceof Error ? `${err.message} | ${err.stack}` : String(err);
-  console.warn("[adapter]", failure.detail, trace);
+  const context = err instanceof AdapterError ? err.context : null;
+  console.warn("[adapter]", failure.detail, trace, ...(context ? [context] : []));
   return failure;
 }
