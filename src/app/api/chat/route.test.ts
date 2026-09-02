@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/adapters/llm/google', () => ({ runAgent: vi.fn() }));
 
@@ -14,6 +14,10 @@ function postRequest(body: unknown, sessionId: string) {
 }
 
 describe('POST /api/chat', () => {
+  beforeEach(() => {
+    vi.mocked(runAgent).mockReset();
+  });
+
   it('returns the agent\'s own response text', async () => {
     vi.mocked(runAgent).mockResolvedValueOnce('KSFO scores 80, ahead of KATL at 30.');
 
@@ -36,6 +40,14 @@ describe('POST /api/chat', () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
     expect(body.data.narrative).toBe('I can help with airport expansion questions.');
+  });
+
+  it('rejects a body with no query instead of asking the agent an empty question', async () => {
+    const res = await POST(postRequest({}, `s-${Date.now()}`));
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.code).toBe('invalid_request');
+    expect(runAgent).not.toHaveBeenCalled();
   });
 
   it('does not fall back to x-forwarded-for for session identity', async () => {
