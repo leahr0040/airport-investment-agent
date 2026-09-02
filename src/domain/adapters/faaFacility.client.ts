@@ -1,41 +1,28 @@
-import axios, { type AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
 import { FailureKind } from './types';
-import { AdapterError, toNetworkError } from './errors';
+import { AdapterError } from './errors';
+import { createHttpClient, httpContext } from './http';
+
+const ARCGIS_BASE = 'https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services';
+const FACILITY_FIELDS = 'ARPT_ID,ICAO_ID,ARPT_NAME,LAT_DECIMAL,LONG_DECIMAL,FACILITY_USE_CODE,FAR_139_TYPE_CODE';
+const RUNWAY_FIELDS = 'ARPT_ID,RWY_ID,RWY_LEN,RWY_WIDTH,LAT1_DECIMAL,LONG1_DECIMAL,LAT2_DECIMAL,LONG2_DECIMAL';
+
+type ArcGisBody = {
+  features?: { attributes: Record<string, unknown> }[];
+  error?: { code?: number; message?: string };
+};
 
 export class FaaFacilityClient {
-  private readonly timeoutMs: number;
-
-  constructor(timeoutMs = 3000, private http: AxiosInstance = axios) {
-    this.timeoutMs = timeoutMs;
-  }
+  constructor(private readonly http: AxiosInstance = createHttpClient({ baseURL: ARCGIS_BASE })) {}
 
   private async queryFeatures(layer: string, where: string, outFields: string): Promise<Record<string, unknown>[]> {
-    const ARCGIS_BASE = 'https://services.arcgis.com/xOi1kZaI0eWDREZv/arcgis/rest/services';
     const params = new URLSearchParams({ where, outFields, f: 'json', returnGeometry: 'false' });
-    const url = `${ARCGIS_BASE}/${layer}/FeatureServer/0/query?${params}`;
+    const response = await this.http.get(`/${layer}/FeatureServer/0/query?${params}`);
 
-    let response;
-    try {
-      response = await this.http.get(url, { timeout: this.timeoutMs, validateStatus: () => true });
-    } catch (err) {
-      throw toNetworkError(err);
-    }
-
-    if (response.status !== 200) {
-      throw new AdapterError('UpstreamError', FailureKind.Unavailable, {
-        method: response.request?.method,
-        path: response.request?.path,
-        status: response.status,
-        data: response.data,
-      });
-    }
-
-    const body = response.data as { features?: { attributes: Record<string, unknown> }[]; error?: { code?: number; message?: string } };
+    const body = response.data as ArcGisBody;
     if (body?.error) {
       throw new AdapterError('ArcGisError', FailureKind.Unavailable, {
-        method: response.request?.method,
-        path: response.request?.path,
-        status: response.status,
+        ...httpContext(response),
         data: body.error,
       });
     }
@@ -44,12 +31,10 @@ export class FaaFacilityClient {
   }
 
   async fetchFacilityRows(icao: string): Promise<Record<string, unknown>[]> {
-    const FACILITY_FIELDS = 'ARPT_ID,ICAO_ID,ARPT_NAME,LAT_DECIMAL,LONG_DECIMAL,FACILITY_USE_CODE,FAR_139_TYPE_CODE';
     return this.queryFeatures('NTAD_Aviation_Facilities', `ICAO_ID='${icao}'`, FACILITY_FIELDS);
   }
 
   async fetchRunwayRows(faaLid: string): Promise<Record<string, unknown>[]> {
-    const RUNWAY_FIELDS = 'ARPT_ID,RWY_ID,RWY_LEN,RWY_WIDTH,LAT1_DECIMAL,LONG1_DECIMAL,LAT2_DECIMAL,LONG2_DECIMAL';
     return this.queryFeatures('Runways_View', `ARPT_ID='${faaLid}'`, RUNWAY_FIELDS);
   }
 }

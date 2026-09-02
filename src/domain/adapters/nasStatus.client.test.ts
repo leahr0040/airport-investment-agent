@@ -1,44 +1,38 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import axios from 'axios';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { econnaborted, getTransport, resetTransport } from '@test/helpers/axios';
 import { nasStatusClient } from './nasStatus.client';
 import { clearCache } from './cache';
 
-vi.mock('axios');
-
-const mockedAxios = vi.mocked(axios, true);
-
 describe('NasStatusClient', () => {
   beforeEach(() => {
-    mockedAxios.get.mockReset();
+    resetTransport();
     clearCache();
   });
 
   it('fetches feed and caches it (one upstream call)', async () => {
     const sampleXml = '<AIRPORT_STATUS_INFORMATION></AIRPORT_STATUS_INFORMATION>';
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: sampleXml } as never);
+    getTransport.mockResolvedValue({ status: 200, data: sampleXml });
 
     const first = await nasStatusClient.fetchCachedFeed();
     const second = await nasStatusClient.fetchCachedFeed();
 
     expect(first).toBe(sampleXml);
     expect(second).toBe(sampleXml);
-    expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+    expect(getTransport).toHaveBeenCalledTimes(1);
   });
 
-  it('maps 429 to rate_limited', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ status: 429, data: '' } as never);
+  it('maps 429 to an unavailable AdapterError', async () => {
+    getTransport.mockResolvedValue({ status: 429, data: '' });
     await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
   it('throws a reasoned error when upstream returns another non-200 status', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ status: 500, data: 'err' } as never);
+    getTransport.mockResolvedValue({ status: 500, data: 'err' });
     await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({ kind: 'unavailable' });
   });
 
   it('wraps a transport failure in an AdapterError named after its code', async () => {
-    mockedAxios.get.mockRejectedValueOnce(
-      Object.assign(new Error('timeout of 3000ms exceeded'), { code: 'ECONNABORTED' }),
-    );
+    getTransport.mockRejectedValue(econnaborted());
     await expect(nasStatusClient.fetchCachedFeed()).rejects.toMatchObject({
       name: 'ECONNABORTED',
       kind: 'unavailable',

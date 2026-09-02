@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import axios from 'axios';
-import { axiosResponse } from '@test/helpers/axios';
+import { axiosResponse, getTransport, resetTransport } from '@test/helpers/axios';
 import { clearCache } from './cache';
 import { fetchFaaFacility } from './faaFacility';
-
-vi.mock('axios');
-
-const mockedAxios = vi.mocked(axios, true);
 
 function facilityFeature(overrides: Record<string, unknown> = {}) {
   return {
@@ -54,7 +49,7 @@ const TWO_RUNWAYS = runwayFeatures([
 
 describe('FAA Facility adapter (fetchFaaFacility)', () => {
   beforeEach(() => {
-    mockedAxios.get.mockReset();
+    resetTransport();
     clearCache();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-13T12:00:00.000Z'));
@@ -67,12 +62,12 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
   it('rejects malformed codes before any network call', async () => {
     await expect(fetchFaaFacility('atl')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
     await expect(fetchFaaFacility('ATL')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
-    expect(mockedAxios.get).toHaveBeenCalledTimes(0);
+    expect(getTransport).toHaveBeenCalledTimes(0);
   });
 
   it('happy path resolves runway count/length and facility identity', async () => {
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, facilityFeature()));
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, TWO_RUNWAYS));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, facilityFeature()));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, TWO_RUNWAYS));
 
     const res = await fetchFaaFacility('KATL');
     expect(res.ok).toBe(true);
@@ -85,10 +80,10 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
   });
 
   it('parses null/undefined ArcGIS numeric fields to null, never 0 or a fabricated coordinate', async () => {
-    mockedAxios.get.mockResolvedValueOnce(
+    getTransport.mockResolvedValueOnce(
       axiosResponse(200, facilityFeature({ LAT_DECIMAL: null, LONG_DECIMAL: null })),
     );
-    mockedAxios.get.mockResolvedValueOnce(
+    getTransport.mockResolvedValueOnce(
       axiosResponse(
         200,
         runwayFeatures([
@@ -117,40 +112,40 @@ describe('FAA Facility adapter (fetchFaaFacility)', () => {
   });
 
   it('returns no_data with no runway query when the facility result is empty', async () => {
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
 
     const res = await fetchFaaFacility('KXXX');
     expect(res).toMatchObject({ ok: false, kind: 'no_data' });
-    expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+    expect(getTransport).toHaveBeenCalledTimes(1);
   });
 
   it.each([
     ['timeout', () => Promise.reject(Object.assign(new Error('aborted'), { code: 'ECONNABORTED' }))],
     ['rate_limited', () => Promise.resolve(axiosResponse(429, {}))],
   ])('collapses a %s upstream failure on the facility GET to unavailable', async (_label, mockImpl) => {
-    mockedAxios.get.mockImplementationOnce(mockImpl as never);
+    getTransport.mockImplementationOnce(mockImpl as never);
 
     const res = await fetchFaaFacility('KATL');
     expect(res).toMatchObject({ ok: false, kind: 'unavailable' });
   });
 
   it('never caches a no_data failure result: two consecutive lookups both hit the network', async () => {
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, { features: [] }));
 
     await fetchFaaFacility('KXXX');
     await fetchFaaFacility('KXXX');
 
-    expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+    expect(getTransport).toHaveBeenCalledTimes(2);
   });
 
   it('still caches a genuine ok:true success: two consecutive lookups hit the network only once', async () => {
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, facilityFeature()));
-    mockedAxios.get.mockResolvedValueOnce(axiosResponse(200, TWO_RUNWAYS));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, facilityFeature()));
+    getTransport.mockResolvedValueOnce(axiosResponse(200, TWO_RUNWAYS));
 
     await fetchFaaFacility('KATL');
     await fetchFaaFacility('KATL');
 
-    expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+    expect(getTransport).toHaveBeenCalledTimes(2);
   });
 });

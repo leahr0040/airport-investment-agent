@@ -1,33 +1,17 @@
-import axios, { type AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
 import { withCache, NAS_STATUS_TTL_MS } from './cache';
-import { FailureKind } from './types';
-import { AdapterError, toNetworkError } from './errors';
+import { createHttpClient } from './http';
 
 const NAS_FEED_URL = 'https://nasstatus.faa.gov/api/airport-status-information';
 
 export class NasStatusClient {
   private readonly cacheKey = 'nas:feed';
-  private readonly timeoutMs = 3000;
 
-  constructor(private readonly http: AxiosInstance = axios) {}
+  constructor(private readonly http: AxiosInstance = createHttpClient()) {}
 
   async fetchCachedFeed(): Promise<string> {
     return await withCache(this.cacheKey, NAS_STATUS_TTL_MS, async () => {
-      let response;
-      try {
-        response = await this.http.get(NAS_FEED_URL, { timeout: this.timeoutMs, validateStatus: () => true });
-      } catch (err) {
-        throw toNetworkError(err);
-      }
-
-      if (response.status !== 200) {
-        throw new AdapterError('UpstreamError', FailureKind.Unavailable, {
-          method: response.request?.method,
-          path: response.request?.path,
-          status: response.status,
-          data: response.data,
-        });
-      }
+      const response = await this.http.get(NAS_FEED_URL);
       return response.data as string;
     });
   }

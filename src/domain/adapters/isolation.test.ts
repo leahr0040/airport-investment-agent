@@ -1,28 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import axios from 'axios';
-import { econnaborted } from '@test/helpers/axios';
+import { econnaborted, getTransport, postTransport, resetTransport } from '@test/helpers/axios';
 import { clearCache } from './cache';
 import { fetchMovements, clearTokenCache } from './opensky';
 import { fetchNasStatus } from './nasStatus';
-
-vi.mock('axios');
-const mockedAxios = vi.mocked(axios, true);
 
 const EMPTY_FEED = `<?xml version="1.0"?><AIRPORT_STATUS_INFORMATION><Update_Time>2026-08-13T10:00:00Z</Update_Time></AIRPORT_STATUS_INFORMATION>`;
 
 describe('cross-adapter failure isolation', () => {
   beforeEach(() => {
-    mockedAxios.post.mockReset();
-    mockedAxios.get.mockReset();
+    resetTransport();
+    
     clearCache();
     clearTokenCache();
   });
   afterEach(() => vi.useRealTimers());
 
   it('OpenSky timing out does not take down the FAA result (Promise.all resolves, not rejects)', async () => {
-    mockedAxios.post.mockResolvedValue({ status: 200, data: { access_token: 'tok', expires_in: 3600 } } as never);
-    mockedAxios.get.mockImplementation(async (url: unknown) => {
-      const u = String(url);
+    postTransport.mockResolvedValue({ status: 200, data: { access_token: 'tok', expires_in: 3600 } } as never);
+    getTransport.mockImplementation(async (config) => {
+      const u = String(config.url);
       if (u.includes('opensky-network.org')) throw econnaborted();
       return { status: 200, data: EMPTY_FEED };
     });
@@ -38,6 +34,6 @@ describe('cross-adapter failure isolation', () => {
 
     expect(opensky).toMatchObject({ ok: false, kind: 'invalid_input' });
     expect(faa).toMatchObject({ ok: false, kind: 'invalid_input' });
-    expect(mockedAxios.get).toHaveBeenCalledTimes(0);
+    expect(getTransport).toHaveBeenCalledTimes(0);
   });
 });

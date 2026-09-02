@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    setupFiles: ["test/setup/stubTransport.ts"],
     testTimeout: 30000,
     env: {
       OPENSKY_CLIENT_ID: "test-opensky-client-id",

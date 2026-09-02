@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import axios from 'axios';
+import { getTransport, resetTransport } from '@test/helpers/axios';
 import { clearCache } from './cache';
 import { fetchNasStatus, toFaaLid } from './nasStatus';
-
-vi.mock('axios');
-
-const mockedAxios = vi.mocked(axios, true);
 
 function feed(delayTypeXml: string, updateTime = '2026-08-13T10:00:00Z') {
   return `<?xml version="1.0"?>
@@ -30,7 +26,7 @@ const CLOSURE_ATL = `
 
 describe('FAA NAS Status adapter', () => {
   beforeEach(() => {
-    mockedAxios.get.mockReset();
+    resetTransport();
     clearCache();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-13T12:00:00.000Z'));
@@ -43,7 +39,7 @@ describe('FAA NAS Status adapter', () => {
   it('rejects malformed codes before any network call', async () => {
     await expect(fetchNasStatus('katl')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
     await expect(fetchNasStatus('ATL')).resolves.toMatchObject({ ok: false, kind: 'invalid_input' });
-    expect(mockedAxios.get).toHaveBeenCalledTimes(0);
+    expect(getTransport).toHaveBeenCalledTimes(0);
   });
 
   it('derives the FAA location identifier from ICAO, not IATA', () => {
@@ -54,7 +50,7 @@ describe('FAA NAS Status adapter', () => {
   });
 
   it('parses the closure block and returns a matching event for KATL', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL) } as never);
 
     const res = await fetchNasStatus('KATL');
     expect(res.ok).toBe(true);
@@ -72,7 +68,7 @@ describe('FAA NAS Status adapter', () => {
   });
 
   it('returns ok true with an empty event list for a healthy airport', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL) } as never);
 
     const res = await fetchNasStatus('KORD');
     expect(res.ok).toBe(true);
@@ -80,7 +76,7 @@ describe('FAA NAS Status adapter', () => {
   });
 
   it('parses a single-element list (one Delay_type, one Airport) as an event, not a dropped object', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL) } as never);
 
     const res = await fetchNasStatus('KATL');
     if (!res.ok) throw new Error('expected ok result');
@@ -98,7 +94,7 @@ describe('FAA NAS Status adapter', () => {
           </Airport>
         </Ground_Stop_List>
       </Delay_type>`;
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL + groundStopOrd) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(CLOSURE_ATL + groundStopOrd) } as never);
 
     const res = await fetchNasStatus('KATL');
     if (!res.ok) throw new Error('expected ok result');
@@ -117,7 +113,7 @@ describe('FAA NAS Status adapter', () => {
           </Entry>
         </Some_Future_List>
       </Delay_type>`;
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(mysteryBlock) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(mysteryBlock) } as never);
 
     const res = await fetchNasStatus('KATL');
     if (!res.ok) throw new Error('expected ok result');
@@ -136,7 +132,7 @@ describe('FAA NAS Status adapter', () => {
           </Airport>
         </Airport_Closure_List>
       </Delay_type>`;
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(closurePbi) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(closurePbi) } as never);
 
     const res = await fetchNasStatus('KPBI');
     if (!res.ok) throw new Error('expected ok result');
@@ -155,7 +151,7 @@ describe('FAA NAS Status adapter', () => {
           </Airport>
         </Airport_Closure_List>
       </Delay_type>`;
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(closureAnc) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(closureAnc) } as never);
 
     const res = await fetchNasStatus('PANC');
     if (!res.ok) throw new Error('expected ok result');
@@ -164,22 +160,22 @@ describe('FAA NAS Status adapter', () => {
   });
 
   it('fetches the whole feed once for two different airports (shared cache key)', async () => {
-    mockedAxios.get.mockResolvedValue({ status: 200, data: feed(CLOSURE_ATL) } as never);
+    getTransport.mockResolvedValue({ status: 200, data: feed(CLOSURE_ATL) } as never);
 
     await fetchNasStatus('KATL');
     await fetchNasStatus('KORD');
 
-    expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+    expect(getTransport).toHaveBeenCalledTimes(1);
   });
 
   it('re-fetches after the NAS TTL expires', async () => {
-    mockedAxios.get.mockResolvedValue({ status: 200, data: feed(CLOSURE_ATL) } as never);
+    getTransport.mockResolvedValue({ status: 200, data: feed(CLOSURE_ATL) } as never);
 
     await fetchNasStatus('KATL');
     vi.advanceTimersByTime(3 * 60 * 1000 + 1);
     await fetchNasStatus('KATL');
 
-    expect(mockedAxios.get).toHaveBeenCalledTimes(2);
+    expect(getTransport).toHaveBeenCalledTimes(2);
   });
 
   it.each([
@@ -187,14 +183,14 @@ describe('FAA NAS Status adapter', () => {
     ['rate_limited', () => Promise.resolve({ status: 429, data: '' })],
     ['server error', () => Promise.resolve({ status: 503, data: '' })],
   ])('collapses a %s upstream failure to unavailable', async (_label, mockImpl) => {
-    mockedAxios.get.mockImplementationOnce(mockImpl as never);
+    getTransport.mockImplementationOnce(mockImpl as never);
 
     const res = await fetchNasStatus('KATL');
     expect(res).toMatchObject({ ok: false, kind: 'unavailable' });
   });
 
   it('never leaks upstream free text into a failure detail', async () => {
-    mockedAxios.get.mockResolvedValueOnce({ status: 503, data: 'secret upstream body text' } as never);
+    getTransport.mockResolvedValueOnce({ status: 503, data: 'secret upstream body text' } as never);
 
     const res = await fetchNasStatus('KATL');
     if (res.ok) throw new Error('expected failure result');
@@ -212,7 +208,7 @@ describe('FAA NAS Status adapter', () => {
           </Airport>
         </Airport_Closure_List>
       </Delay_type>`;
-    mockedAxios.get.mockResolvedValueOnce({ status: 200, data: feed(closureWithEntities) } as never);
+    getTransport.mockResolvedValueOnce({ status: 200, data: feed(closureWithEntities) } as never);
 
     const res = await fetchNasStatus('KATL');
     if (!res.ok) throw new Error('expected ok result');

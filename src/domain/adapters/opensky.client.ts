@@ -1,7 +1,8 @@
-import axios, { type AxiosInstance } from 'axios';
+import type { AxiosInstance } from 'axios';
 import { getEnv } from '@/config/env';
 import { FailureKind } from './types';
-import { AdapterError, toNetworkError } from './errors';
+import { AdapterError } from './errors';
+import { createHttpClient, httpContext, okOr } from './http';
 
 const TOKEN_ENDPOINT = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
 const FLIGHTS_BASE = 'https://opensky-network.org/api';
@@ -12,11 +13,8 @@ export class OpenSkyClient {
   private cachedToken: string | null = null;
   private tokenExpiryMs = 0;
   private pendingTokenRequest: Promise<string> | null = null;
-  private readonly timeoutMs: number;
 
-  constructor(timeoutMs = 3000, private http: AxiosInstance = axios) {
-    this.timeoutMs = timeoutMs;
-  }
+  constructor(private readonly http: AxiosInstance = createHttpClient()) {}
 
   clearTokenCache(): void {
     this.cachedToken = null;
@@ -32,33 +30,14 @@ export class OpenSkyClient {
   }
 
   private async requestToken(env: ReturnType<typeof getEnv>) {
-    const tokenRequestPayload = this.buildTokenPayload(env);
-    let response;
-    try {
-      response = await this.http.post(TOKEN_ENDPOINT, tokenRequestPayload, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        timeout: this.timeoutMs,
-        validateStatus: () => true,
-      });
-    } catch (err) {
-      throw toNetworkError(err);
-    }
-
-    if (response.status !== 200) {
-      throw new AdapterError('TokenFetchFailed', FailureKind.Unavailable, {
-        method: response.request?.method,
-        path: response.request?.path,
-        status: response.status,
-      });
-    }
+    const response = await this.http.post(TOKEN_ENDPOINT, this.buildTokenPayload(env), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      errorName: 'TokenFetchFailed',
+    });
 
     const responseBody = response.data as { access_token?: string; expires_in?: number };
     if (!responseBody.access_token || !responseBody.expires_in) {
-      throw new AdapterError('TokenMissing', FailureKind.Unavailable, {
-        method: response.request?.method,
-        path: response.request?.path,
-        status: response.status,
-      });
+      throw new AdapterError('TokenMissing', FailureKind.Unavailable, httpContext(response));
     }
     return { access_token: responseBody.access_token, expires_in: Number(responseBody.expires_in) };
   }
@@ -88,17 +67,10 @@ export class OpenSkyClient {
     window: TimeWindow,
     token: string,
   ): Promise<Record<string, unknown>[]> {
-    const url = this.buildFlightsUrl(icao, kind, window);
-    let response;
-    try {
-      response = await this.http.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: this.timeoutMs,
-        validateStatus: () => true,
-      });
-    } catch (err) {
-      throw toNetworkError(err);
-    }
+    const response = await this.http.get(this.buildFlightsUrl(icao, kind, window), {
+      headers: { Authorization: `Bearer ${token}` },
+      validateStatus: okOr(401, 403, 404),
+    });
 
     // OpenSky returns 404, not an empty 200, when no flights exist for the period.
     if (response.status === 404) return [];
@@ -106,9 +78,7 @@ export class OpenSkyClient {
 
     if (response.status !== 200) {
       throw new AdapterError('UpstreamError', FailureKind.Unavailable, {
-        method: response.request?.method,
-        path: response.request?.path,
-        status: response.status,
+        ...httpContext(response),
         data: response.data,
       });
     }
