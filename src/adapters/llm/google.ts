@@ -1,4 +1,4 @@
-import { GoogleGenAI, FunctionCallingConfigMode, type Chat } from '@google/genai';
+import { GoogleGenAI, FunctionCallingConfigMode, type Chat, type FunctionCall } from '@google/genai';
 import { getEnv } from '@/config/env';
 import { TOOL_DECLARATIONS, TOOL_HANDLERS, type ToolName } from '@/domain/agent/tools';
 import { getOrCreateChat } from './sessionStore';
@@ -22,6 +22,20 @@ function isToolName(name: string | undefined): name is ToolName {
   return name !== undefined && TOOL_NAMES.has(name as ToolName);
 }
 
+async function executeToolCall(call: FunctionCall): Promise<{ functionResponse: { name: string; response: Record<string, unknown> } }> {
+  if (!isToolName(call.name)) {
+    return { functionResponse: { name: call.name ?? 'unknown', response: { error: 'unknown_tool' } } };
+  }
+  let result: unknown;
+  try {
+    result = await TOOL_HANDLERS[call.name](call.args as never);
+  } catch (e) {
+    console.error('[llm/google] tool execution failed', call.name, e);
+    result = { error: 'tool_execution_failed' };
+  }
+  return { functionResponse: { name: call.name, response: result as Record<string, unknown> } };
+}
+
 function createChat(): Chat {
   return geminiClient.chats.create({
     model: AGENT_MODEL,
@@ -29,27 +43,18 @@ function createChat(): Chat {
   });
 }
 
+const modelIsDone = (response: Awaited<ReturnType<Chat['sendMessage']>>) => !response.functionCalls?.length;
+
 export async function runAgent(sessionId: string, query: string): Promise<string> {
   const chat = getOrCreateChat(sessionId, createChat);
-  let message: Parameters<Chat['sendMessage']>[0]['message'] = query;
+  let response = await chat.sendMessage({ message: query });
 
-  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const response = await chat.sendMessage({ message });
-
-    const calls = response.functionCalls ?? [];
-    if (calls.length === 0) return response.text ?? '';
-
-    const responseParts = [];
-    for (const call of calls) {
-      if (!isToolName(call.name)) {
-        responseParts.push({ functionResponse: { name: call.name ?? 'unknown', response: { error: 'unknown_tool' } } });
-        continue;
-      }
-      const result = await TOOL_HANDLERS[call.name](call.args as never);
-      responseParts.push({ functionResponse: { name: call.name, response: result as Record<string, unknown> } });
-    }
-    message = responseParts;
+  for (let round = 0; round < MAX_TOOL_ROUNDS - 1 && !modelIsDone(response); round++) {
+    const parts = await Promise.all(response.functionCalls!.map(executeToolCall));
+    response = await chat.sendMessage({ message: parts });
   }
 
-  return "I wasn't able to finish that request - please try rephrasing it.";
+  return modelIsDone(response)
+    ? response.text ?? ''
+    : "I wasn't able to finish that request - please try rephrasing it.";
 }

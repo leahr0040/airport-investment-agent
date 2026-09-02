@@ -96,6 +96,7 @@ describe('runAgent', () => {
     const result = await runAgent('test-session-3', 'Compare KBOS forever');
 
     expect(result).toBe("I wasn't able to finish that request - please try rephrasing it.");
+    expect(sendMessageMock).toHaveBeenCalledTimes(4);
     expect(sendMessageMock).toHaveBeenNthCalledWith(1, { message: 'Compare KBOS forever' });
     expect(sendMessageMock).toHaveBeenNthCalledWith(2, {
       message: [{ functionResponse: { name: 'score_airports', response: { scores: [{ icao: 'KBOS', score: 80 }] } } }],
