@@ -1,15 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import axios, { type AxiosResponse } from 'axios';
+import axios from 'axios';
+import { axiosResponse } from '@test/helpers/axios';
 import { clearCache } from './cache';
 import { fetchFaaFacility } from './faaFacility';
 
 vi.mock('axios');
 
 const mockedAxios = vi.mocked(axios, true);
-
-function axiosResponse(status: number, data: unknown): AxiosResponse {
-  return { status, data } as unknown as AxiosResponse;
-}
 
 function facilityFeature(overrides: Record<string, unknown> = {}) {
   return {

@@ -1,15 +1,11 @@
-import axios from 'axios';
-import { FailureKind, type HttpResponse } from './types';
+import axios, { type AxiosInstance } from 'axios';
+import { FailureKind } from './types';
 import { AdapterError, toNetworkError } from './errors';
-
-export type HttpClient = {
-  get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
-};
 
 export class FaaFacilityClient {
   private readonly timeoutMs: number;
 
-  constructor(timeoutMs = 3000, private http: HttpClient = axios as unknown as HttpClient) {
+  constructor(timeoutMs = 3000, private http: AxiosInstance = axios) {
     this.timeoutMs = timeoutMs;
   }
 

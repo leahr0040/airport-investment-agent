@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { getEnv } from '@/config/env';
-import { FailureKind, type HttpResponse } from './types';
+import { FailureKind } from './types';
 import { AdapterError, toNetworkError } from './errors';
 
 const TOKEN_ENDPOINT = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
@@ -8,18 +8,13 @@ const FLIGHTS_BASE = 'https://opensky-network.org/api';
 
 export type TimeWindow = { begin: number; end: number };
 
-export type HttpClient = {
-  post: (url: string, data: unknown, config: Record<string, unknown>) => Promise<HttpResponse>;
-  get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
-};
-
 export class OpenSkyClient {
   private cachedToken: string | null = null;
   private tokenExpiryMs = 0;
   private pendingTokenRequest: Promise<string> | null = null;
   private readonly timeoutMs: number;
 
-  constructor(timeoutMs = 3000, private http: HttpClient = axios as unknown as HttpClient) {
+  constructor(timeoutMs = 3000, private http: AxiosInstance = axios) {
     this.timeoutMs = timeoutMs;
   }
 

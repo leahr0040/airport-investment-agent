@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import axios from 'axios';
+import { econnaborted } from '@test/helpers/axios';
 import { clearCache } from './cache';
 import { fetchMovements, clearTokenCache } from './opensky';
 import { fetchNasStatus } from './nasStatus';
@@ -8,10 +9,6 @@ vi.mock('axios');
 const mockedAxios = vi.mocked(axios, true);
 
 const EMPTY_FEED = `<?xml version="1.0"?><AIRPORT_STATUS_INFORMATION><Update_Time>2026-08-13T10:00:00Z</Update_Time></AIRPORT_STATUS_INFORMATION>`;
-
-function econnaborted() {
-  return Object.assign(new Error('timeout of 3000ms exceeded'), { code: 'ECONNABORTED' });
-}
 
 describe('cross-adapter failure isolation', () => {
   beforeEach(() => {

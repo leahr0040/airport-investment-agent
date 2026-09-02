@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import axios, { type AxiosResponse } from 'axios';
+import axios from 'axios';
+import { axiosResponse, econnaborted } from '@test/helpers/axios';
 import { clearCache } from './cache';
 import { fetchMovements, clearTokenCache } from './opensky';
 
@@ -7,14 +8,6 @@ vi.mock('axios');
 
 const mockedAxios = vi.mocked(axios, true);
 const TOKEN_BODY = { access_token: 'fake-bearer-token-xyz', expires_in: 3600 };
-
-function axiosResponse(status: number, data: unknown): AxiosResponse {
-  return { status, data } as unknown as AxiosResponse;
-}
-
-function econnaborted() {
-  return Object.assign(new Error('timeout of 3000ms exceeded'), { code: 'ECONNABORTED' });
-}
 
 describe('OpenSky adapter (fetchMovements) with axios', () => {
   beforeEach(() => {

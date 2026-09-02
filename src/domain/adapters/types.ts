@@ -1,9 +1,3 @@
-export type HttpResponse = {
-  status: number;
-  data: unknown;
-  request?: { method?: string; path?: string };
-};
-
 export enum FailureKind {
   NoData = "no_data",
   InvalidInput = "invalid_input",

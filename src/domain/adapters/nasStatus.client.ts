@@ -1,19 +1,15 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { withCache, NAS_STATUS_TTL_MS } from './cache';
-import { FailureKind, type HttpResponse } from './types';
+import { FailureKind } from './types';
 import { AdapterError, toNetworkError } from './errors';
 
 const NAS_FEED_URL = 'https://nasstatus.faa.gov/api/airport-status-information';
-
-type HttpClient = {
-  get: (url: string, config: Record<string, unknown>) => Promise<HttpResponse>;
-};
 
 export class NasStatusClient {
   private readonly cacheKey = 'nas:feed';
   private readonly timeoutMs = 3000;
 
-  constructor(private readonly http: HttpClient = axios as unknown as HttpClient) {}
+  constructor(private readonly http: AxiosInstance = axios) {}
 
   async fetchCachedFeed(): Promise<string> {
     return await withCache(this.cacheKey, NAS_STATUS_TTL_MS, async () => {
