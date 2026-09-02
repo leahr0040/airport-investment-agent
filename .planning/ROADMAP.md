@@ -156,7 +156,17 @@ Plans:
   2. Sending rapid repeated requests from one session hits a per-session rate limit before upstream API quota or LLM budget is exhausted.
   3. The design document explains the scoring methodology (formula, weight table, one worked example), the key tradeoffs made, where and how AI is used versus deliberately excluded, and the alternatives considered and declined.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Guard the three adapter client modules with `server-only`, correct README's account of what ships and link DESIGN.md, correct the stale SEC-02 note (SEC-01)
+- [ ] 05-02-PLAN.md — DESIGN.md sections 1-4: request flow and trust boundary, scoring methodology, the re-verifiable worked example, the security model (SEC-01, SEC-03, DOC-01)
+
+**Wave 2**
+
+- [ ] 05-03-PLAN.md — DESIGN.md sections 5-8: tradeoffs, AI-usage disclosure, alternatives declined, known limitations; plus the blocking decision on whether `.planning/` ships (SEC-03, DOC-01)
 
 ## Progress
 
@@ -169,4 +179,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Live Data Adapters & Caching | 5/5 | Complete    | 2026-08-13 |
 | 3. Deterministic Scoring Engine | 2/2 | Complete | 2026-08-19 |
 | 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 2/2 | Complete    | 2026-08-20 |
-| 5. Security Hardening, Design Doc & Submission Packaging | 0/TBD | Not started | - |
+| 5. Security Hardening, Design Doc & Submission Packaging | 0/3 | Planned | - |
