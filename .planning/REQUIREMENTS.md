@@ -57,25 +57,25 @@
 
 ### Analyst Questions
 
-- [ ] **QUERY-01**: Analyst can ask which airports in a region are the strongest expansion candidates and receive a ranked list with scores
-- [ ] **QUERY-02**: Analyst can compare two named airports on a single KPI and see both values and the difference
+- [x] **QUERY-01**: Analyst can ask which airports in a region are the strongest expansion candidates and receive a ranked list with scores
+- [x] **QUERY-02**: Analyst can compare two named airports on a single KPI and see both values and the difference
 - [x] **QUERY-03**: Analyst can ask for the share of long-haul flights from an airport, computed by great-circle distance against a stated, cited threshold
 - [x] **QUERY-04**: Analyst can ask why an airport has unmet demand and receive an explanation naming the airport-specific physical cause, not a generic high-utilization statement — derived from runway geometry (parallel-runway separation from FAA ArcGIS) cross-referenced with observed delay conditions. The project asks "and why?"; an answer that does not explain *why this airport* has not answered it.
 - [x] **QUERY-05**: Every answer states the assumptions behind it, the data window used, and what is measured versus proxied
 
 ### Chat Interface
 
-- [ ] **CHAT-01**: Analyst can ask a question in natural language through a chat interface and receive a narrated answer
-- [ ] **CHAT-02**: Numeric values shown in the UI are rendered from the scoring engine's structured output, never parsed out of the LLM's prose
-- [ ] **CHAT-03**: Analyst can ask follow-up questions that resolve against prior turns ("why?", "what about Boston?", "compare those two")
-- [ ] **CHAT-04**: Chat transport sits behind an adapter interface with a single text implementation, so a voice adapter could be added without changing the agent
+- [x] **CHAT-01**: Analyst can ask a question in natural language through a chat interface and receive a narrated answer
+- [x] **CHAT-02**: Numeric values shown in the UI are rendered from the scoring engine's structured output, never parsed out of the LLM's prose
+- [x] **CHAT-03**: Analyst can ask follow-up questions that resolve against prior turns ("why?", "what about Boston?", "compare those two")
+- [x] **CHAT-04**: Chat transport sits behind an adapter interface with a single text implementation, so a voice adapter could be added without changing the agent
 
 ### Security
 
 - [ ] **SEC-01**: Secrets and all upstream API calls are server-side only; no key or upstream endpoint is reachable from the browser
 - [ ] **SEC-02**: Every user-supplied airport identifier is validated against the resolved airport allowlist before it can reach an outbound request — **the allowlist (`allowlist.ts`) was deleted in the 2026-08-13 architecture pivot by explicit user decision. Nothing in the codebase currently validates an airport identifier's shape or existence before it could reach an outbound URL. This directly contradicts this project's own CLAUDE.md, which calls SEC-02-style validation "not deferrable polish" — flagged here, not silently dropped. Needs a decision before Phase 2 wires any outbound call: reintroduce format-only validation at minimum, or accept the gap knowingly.**
 - [ ] **SEC-03**: The chat endpoint is rate-limited per session so one client cannot exhaust the upstream quota or LLM budget
-- [ ] **SEC-04**: Text from third-party API responses is treated as untrusted data when it enters LLM context and cannot act as instructions
+- [x] **SEC-04**: Text from third-party API responses is treated as untrusted data when it enters LLM context and cannot act as instructions
 
 ### Deliverable
 

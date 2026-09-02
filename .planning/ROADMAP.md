@@ -168,5 +168,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 1. Foundation — Configuration, Airport Registry & Resolution | 4/4 | Complete (scope reduced 2026-08-13) | 2026-08-13 |
 | 2. Live Data Adapters & Caching | 5/5 | Complete    | 2026-08-13 |
 | 3. Deterministic Scoring Engine | 2/2 | Complete | 2026-08-19 |
-| 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 2/2 | Complete   | 2026-08-20 |
+| 4. Conversational Agent — Chat, Tool-Calling & Analyst Questions | 2/2 | Complete    | 2026-08-20 |
 | 5. Security Hardening, Design Doc & Submission Packaging | 0/TBD | Not started | - |
