@@ -27,7 +27,7 @@ deterministic logic will not believe the agent.
 - **API keys**: All credentials live in `.env` and are **required for v1** — OpenSky OAuth2 client (free registration) and one LLM key. No fallback or degraded mode is built. The app must fail at startup with a specific, actionable message naming the missing variable. Config is read through one validated env module that distinguishes required from optional, so optional keys can be added later without touching call sites — but nothing is optional today.
 - **LLM cost**: Cheapest capable model — this is a throwaway project artifact, not production. Model choice is a research question, not a guess.
 - **Voice**: Not implemented, but the chat transport must not preclude it — bonus item deferred; architecture keeps the door open at zero cost.
-- **Honesty**: Every derived or assumed number must be labeled as such — the project grades on clearly communicating assumptions, uncertainty and scoping; a confident wrong number fails harder than a hedged right one.
+- **Honesty**: Every derived or assumed number must be labeled as such — the project is graded on clearly communicating assumptions, uncertainty and scoping; a confident wrong number fails harder than a hedged right one.
 - **Security**: Strong guardrails required at every trust boundary — user's explicit requirement. Concretely: treat third-party API responses as untrusted input to the LLM (injection surface), keep all secrets and upstream calls server-side, allowlist-validate every user-supplied identifier before it reaches an outbound URL, and rate-limit the chat endpoint per session. These are not deferrable polish.
 
 <!-- GSD:project-end -->

@@ -6,8 +6,9 @@ backed by a deterministic scoring engine over live aviation data rather than LLM
 **Every number the agent states must be traceable to a deterministic computation over real
 data, with its assumptions and uncertainty stated out loud.**
 
-This repository is currently in early foundation work (configuration validation and the
-airport reference registry) — it does not yet ship a chat UI or the scoring engine.
+The chat UI, the deterministic scoring engine, and the three live-data adapters (OpenSky,
+FAA NAS Status, FAA ADIP) are implemented and covered by tests. Security hardening and the
+design document are the remaining work.
 
 ## Prerequisites
 

@@ -101,7 +101,7 @@ Table-stakes-adjacent items that users would eventually expect, deferred for the
 - **Second LLM provider** — Gemini 2.5 Flash only. The AI SDK makes a future swap a one-line change, which is exactly why building two paths now is unnecessary.
 - **Degraded / no-credential mode** — all keys required for v1. Dropping the dual-path requirement buys hours for scoring depth.
 - **Real financial modeling (NPV/IRR/construction cost)** — no cost data available; inventing it would be dishonest.
-- **Map/GIS visualization** — looks impressive, adds nothing to the reasoning the project grades.
+- **Map/GIS visualization** — looks impressive, adds nothing to the reasoning the project is graded on.
 - **Authentication and multi-user accounts** — single-analyst demo tool.
 - **Non-US airports** — the firm invests in US airports only.
 
